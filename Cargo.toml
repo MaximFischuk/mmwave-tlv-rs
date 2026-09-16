@@ -1,0 +1,10 @@
+[package]
+name = "titlv"
+description = "A Rust library for decoding TLV (Type-Length-Value) packets of Texas Instruments' sensors such as mmWave radars (IWR6843, IWR1443, etc.)."
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[dependencies]
+# Error handling
+thiserror = "2.0"
