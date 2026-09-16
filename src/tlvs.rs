@@ -1,12 +1,13 @@
 use crate::TlvDecode;
 
+// #[derive(Decode, Type)]
+// #[tlv(type = 1)] # Add implementation of Tlv trait to allow use this struct as a TLV type in TlvPayload
 pub struct PointCloud {
     pub points: Vec<Point>,
 }
 
 impl crate::Tlv for PointCloud {
     const TYPE: u32 = 1; // Example type, adjust as needed
-    const LENGTH: usize = 0; // Length is dynamic due to Vec<Point>
 }
 
 pub struct Point {
