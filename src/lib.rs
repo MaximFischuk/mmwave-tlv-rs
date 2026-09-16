@@ -1,9 +1,10 @@
 mod decoder;
 mod error;
+mod tlvs;
 
 pub const MAGIC: [u8; 8] = [0x02, 0x01, 0x04, 0x03, 0x06, 0x05, 0x08, 0x07];
 
-pub struct Header {
+pub struct FrameHeader {
     pub magic_word: [u8; 8],   // Offset 0, 8 bytes
     pub version: u32,          // Offset 8, 4 bytes
     pub total_packet_len: u32, // Offset 12, 4 bytes
@@ -15,14 +16,25 @@ pub struct Header {
     pub sub_frame_number: u32, // Offset 36, 4 bytes
 }
 
-/// A generic packet structure containing a header and a payload of type `T`.
-/// Each packet start with a magic word defined in the `Header`.
-pub struct Packet<T>
+pub struct Frame<T>
 where
     T: Tlv + TlvDecode,
 {
-    pub header: Header,
-    pub payload: T,
+    pub header: FrameHeader,
+    pub payload: TlvPayload<T>,
+}
+
+pub struct TlvPayload<T>
+where
+    T: Tlv + TlvDecode,
+{
+    pub header: TlvHeader,
+    pub value: T,
+}
+
+pub struct TlvHeader {
+    pub r#type: u32, // Offset 0, 4 bytes
+    pub length: u32, // Offset 4, 4 bytes
 }
 
 pub trait Tlv: Sized {
@@ -45,11 +57,11 @@ impl<const N: usize> TlvDecode for [u8; N] {
     }
 }
 
-impl Header {
+impl FrameHeader {
     const LENGTH: usize = 8 + 4 * 8; // 8 bytes for magic_word + 8 u32 fields
 }
 
-impl TlvDecode for Header {
+impl TlvDecode for FrameHeader {
     fn decode(bytes: &[u8]) -> error::Result<Self> {
         if bytes.len() != Self::LENGTH {
             return Err(error::TlvError::DecodeError);
@@ -64,7 +76,7 @@ impl TlvDecode for Header {
         let num_tlvs = TlvDecode::decode(&bytes[32..36])?;
         let sub_frame_number = TlvDecode::decode(&bytes[36..40])?;
 
-        Ok(Header {
+        Ok(FrameHeader {
             magic_word,
             version,
             total_packet_len,
@@ -75,6 +87,38 @@ impl TlvDecode for Header {
             num_tlvs,
             sub_frame_number,
         })
+    }
+}
+
+impl TlvDecode for TlvHeader {
+    fn decode(bytes: &[u8]) -> error::Result<Self> {
+        if bytes.len() != 8 {
+            return Err(error::TlvError::DecodeError);
+        }
+        let r#type = TlvDecode::decode(&bytes[0..4])?;
+        let length = TlvDecode::decode(&bytes[4..8])?;
+
+        Ok(TlvHeader { r#type, length })
+    }
+}
+
+impl<T> TlvDecode for TlvPayload<T>
+where
+    T: Tlv + TlvDecode,
+{
+    fn decode(bytes: &[u8]) -> error::Result<Self> {
+        if bytes.is_empty() {
+            return Err(error::TlvError::DecodeError);
+        }
+        let header = TlvHeader::decode(&bytes[0..8])?;
+        if T::LENGTH != 0 && bytes.len() != T::LENGTH {
+            return Err(error::TlvError::DecodeError);
+        }
+        if T::TYPE != header.r#type || T::LENGTH != 0 && bytes.len() != T::LENGTH {
+            return Err(error::TlvError::DecodeError);
+        }
+        let value = TlvDecode::decode(&bytes[8..])?;
+        Ok(TlvPayload { header, value })
     }
 }
 
