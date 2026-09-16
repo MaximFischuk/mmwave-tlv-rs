@@ -19,22 +19,22 @@ pub struct Header {
 /// Each packet start with a magic word defined in the `Header`.
 pub struct Packet<T>
 where
-    T: Tlv,
+    T: Tlv + TlvDecode,
 {
     pub header: Header,
     pub payload: T,
 }
 
 pub trait Tlv: Sized {
-    const TYPE: Option<u32> = None;
+    const TYPE: u32;
     const LENGTH: usize;
+}
 
+pub trait TlvDecode: Sized {
     fn decode(bytes: &[u8]) -> error::Result<Self>;
 }
 
-impl<const N: usize> Tlv for [u8; N] {
-    const LENGTH: usize = N;
-
+impl<const N: usize> TlvDecode for [u8; N] {
     fn decode(bytes: &[u8]) -> error::Result<Self> {
         if bytes.len() != N {
             return Err(error::TlvError::DecodeError);
@@ -45,22 +45,24 @@ impl<const N: usize> Tlv for [u8; N] {
     }
 }
 
-impl Tlv for Header {
+impl Header {
     const LENGTH: usize = 8 + 4 * 8; // 8 bytes for magic_word + 8 u32 fields
+}
 
+impl TlvDecode for Header {
     fn decode(bytes: &[u8]) -> error::Result<Self> {
         if bytes.len() != Self::LENGTH {
             return Err(error::TlvError::DecodeError);
         }
-        let magic_word = Tlv::decode(&bytes[0..8])?;
-        let version = Tlv::decode(&bytes[8..12])?;
-        let total_packet_len = Tlv::decode(&bytes[12..16])?;
-        let platform = Tlv::decode(&bytes[16..20])?;
-        let frame_number = Tlv::decode(&bytes[20..24])?;
-        let time_cpu_cycles = Tlv::decode(&bytes[24..28])?;
-        let num_detected_obj = Tlv::decode(&bytes[28..32])?;
-        let num_tlvs = Tlv::decode(&bytes[32..36])?;
-        let sub_frame_number = Tlv::decode(&bytes[36..40])?;
+        let magic_word = TlvDecode::decode(&bytes[0..8])?;
+        let version = TlvDecode::decode(&bytes[8..12])?;
+        let total_packet_len = TlvDecode::decode(&bytes[12..16])?;
+        let platform = TlvDecode::decode(&bytes[16..20])?;
+        let frame_number = TlvDecode::decode(&bytes[20..24])?;
+        let time_cpu_cycles = TlvDecode::decode(&bytes[24..28])?;
+        let num_detected_obj = TlvDecode::decode(&bytes[28..32])?;
+        let num_tlvs = TlvDecode::decode(&bytes[32..36])?;
+        let sub_frame_number = TlvDecode::decode(&bytes[36..40])?;
 
         Ok(Header {
             magic_word,
@@ -79,15 +81,13 @@ impl Tlv for Header {
 macro_rules! impl_tlv_for_primitive {
     ($($primitive:ty),+ $(,)?) => {
         $(
-            impl Tlv for $primitive {
-                const LENGTH: usize = std::mem::size_of::<Self>();
-
+            impl TlvDecode for $primitive {
                 fn decode(bytes: &[u8]) -> error::Result<Self> {
-                    if bytes.len() != Self::LENGTH {
+                    if bytes.len() != std::mem::size_of::<Self>() {
                         return Err(error::TlvError::DecodeError);
                     }
-                    let mut array = [0u8; Self::LENGTH];
-                    array.copy_from_slice(&bytes[..Self::LENGTH]);
+                    let mut array = [0u8; std::mem::size_of::<Self>()];
+                    array.copy_from_slice(&bytes[..std::mem::size_of::<Self>()]);
                     Ok(<$primitive>::from_le_bytes(array))
                 }
             }
