@@ -4,6 +4,11 @@ pub struct PointCloud {
     pub points: Vec<Point>,
 }
 
+impl crate::Tlv for PointCloud {
+    const TYPE: u32 = 1; // Example type, adjust as needed
+    const LENGTH: usize = 0; // Length is dynamic due to Vec<Point>
+}
+
 pub struct Point {
     pub x: f32,
     pub y: f32,
@@ -14,7 +19,7 @@ pub struct Point {
 impl TlvDecode for Point {
     fn decode(bytes: &[u8]) -> crate::error::Result<Self> {
         if bytes.len() != 16 {
-            return Err(crate::error::TlvError::DecodeError);
+            return Err(crate::error::TlvError::InvalidPointLength);
         }
         let x = TlvDecode::decode(&bytes[0..4])?;
         let y = TlvDecode::decode(&bytes[4..8])?;

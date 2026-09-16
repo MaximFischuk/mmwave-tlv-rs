@@ -49,7 +49,7 @@ pub trait TlvDecode: Sized {
 impl<const N: usize> TlvDecode for [u8; N] {
     fn decode(bytes: &[u8]) -> error::Result<Self> {
         if bytes.len() != N {
-            return Err(error::TlvError::DecodeError);
+            return Err(error::TlvError::InvalidArrayLength);
         }
         let mut array = [0u8; N];
         array.copy_from_slice(&bytes[..N]);
@@ -64,7 +64,7 @@ impl FrameHeader {
 impl TlvDecode for FrameHeader {
     fn decode(bytes: &[u8]) -> error::Result<Self> {
         if bytes.len() != Self::LENGTH {
-            return Err(error::TlvError::DecodeError);
+            return Err(error::TlvError::InvalidFrameHeaderLength);
         }
         let magic_word = TlvDecode::decode(&bytes[0..8])?;
         let version = TlvDecode::decode(&bytes[8..12])?;
@@ -93,7 +93,7 @@ impl TlvDecode for FrameHeader {
 impl TlvDecode for TlvHeader {
     fn decode(bytes: &[u8]) -> error::Result<Self> {
         if bytes.len() != 8 {
-            return Err(error::TlvError::DecodeError);
+            return Err(error::TlvError::InvalidTlvHeaderLength);
         }
         let r#type = TlvDecode::decode(&bytes[0..4])?;
         let length = TlvDecode::decode(&bytes[4..8])?;
@@ -108,14 +108,18 @@ where
 {
     fn decode(bytes: &[u8]) -> error::Result<Self> {
         if bytes.is_empty() {
-            return Err(error::TlvError::DecodeError);
+            return Err(error::TlvError::MissingTlvPayload);
         }
-        let header = TlvHeader::decode(&bytes[0..8])?;
+        let header = TlvHeader::decode(
+            bytes
+                .get(..8)
+                .ok_or(error::TlvError::InvalidTlvHeaderLength)?,
+        )?;
         if T::LENGTH != 0 && bytes.len() != T::LENGTH {
-            return Err(error::TlvError::DecodeError);
+            return Err(error::TlvError::InvalidTlvLength);
         }
-        if T::TYPE != header.r#type || T::LENGTH != 0 && bytes.len() != T::LENGTH {
-            return Err(error::TlvError::DecodeError);
+        if T::TYPE != header.r#type {
+            return Err(error::TlvError::UnexpectedTlvType);
         }
         let value = TlvDecode::decode(&bytes[8..])?;
         Ok(TlvPayload { header, value })
@@ -128,7 +132,7 @@ macro_rules! impl_tlv_for_primitive {
             impl TlvDecode for $primitive {
                 fn decode(bytes: &[u8]) -> error::Result<Self> {
                     if bytes.len() != std::mem::size_of::<Self>() {
-                        return Err(error::TlvError::DecodeError);
+                        return Err(error::TlvError::InvalidPrimitiveLength);
                     }
                     let mut array = [0u8; std::mem::size_of::<Self>()];
                     array.copy_from_slice(&bytes[..std::mem::size_of::<Self>()]);
