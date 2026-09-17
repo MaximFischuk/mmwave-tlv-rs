@@ -1,5 +1,7 @@
+use std::io::BufReader;
+
 use crate::{
-    Tlv, TlvDecode, error,
+    Tlv, TlvReader, error,
     types::{FrameHeader, TlvPayload},
 };
 
@@ -8,13 +10,16 @@ pub struct Frame<T> {
     pub payload: Vec<TlvPayload<T>>,
 }
 
-impl<T> TlvDecode for Frame<T>
+impl<T> TlvReader for Frame<T>
 where
-    T: Tlv + TlvDecode,
+    T: Tlv + TlvReader,
 {
-    fn decode(bytes: &[u8]) -> error::Result<Self> {
-        let header = FrameHeader::decode(&bytes[..FrameHeader::LENGTH])?;
-        // Implement the decoding logic for the payloads here
-        unimplemented!()
+    fn read(bytes: &[u8]) -> error::Result<Self> {
+        let header = FrameHeader::read(&bytes[..FrameHeader::LENGTH])?;
+
+        let mut payload = Vec::with_capacity(header.num_tlvs as usize);
+        let buffer = BufReader::new(&bytes[FrameHeader::LENGTH..]);
+
+        Ok(Frame { header, payload })
     }
 }

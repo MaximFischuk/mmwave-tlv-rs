@@ -1,7 +1,7 @@
-use crate::{TlvDecode, error};
+use crate::{TlvReader, error};
 
-impl<const N: usize> TlvDecode for [u8; N] {
-    fn decode(bytes: &[u8]) -> error::Result<Self> {
+impl<const N: usize> TlvReader for [u8; N] {
+    fn read(bytes: &[u8]) -> error::Result<Self> {
         if bytes.len() != N {
             return Err(error::TlvError::InvalidArrayLength);
         }
@@ -11,11 +11,26 @@ impl<const N: usize> TlvDecode for [u8; N] {
     }
 }
 
+impl<T: TlvReader> TlvReader for Vec<T> {
+    fn read(bytes: &[u8]) -> error::Result<Self> {
+        let mut vec = Vec::new();
+        if bytes.len() % std::mem::size_of::<T>() != 0 {
+            return Err(error::TlvError::InvalidArrayLength);
+        }
+
+        for chunk in bytes.chunks(std::mem::size_of::<T>()) {
+            let item = T::read(chunk)?;
+            vec.push(item);
+        }
+        Ok(vec)
+    }
+}
+
 macro_rules! impl_tlv_for_primitive {
     ($($primitive:ty),+ $(,)?) => {
         $(
-            impl TlvDecode for $primitive {
-                fn decode(bytes: &[u8]) -> error::Result<Self> {
+            impl TlvReader for $primitive {
+                fn read(bytes: &[u8]) -> error::Result<Self> {
                     if bytes.len() != std::mem::size_of::<Self>() {
                         return Err(error::TlvError::InvalidPrimitiveLength);
                     }

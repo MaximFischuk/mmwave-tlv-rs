@@ -11,6 +11,6 @@ pub trait Tlv: Sized {
     const TYPE: u32;
 }
 
-pub trait TlvDecode: Sized {
-    fn decode(bytes: &[u8]) -> error::Result<Self>;
+pub trait TlvReader: Sized {
+    fn read(bytes: &[u8]) -> error::Result<Self>;
 }
