@@ -1,5 +1,7 @@
-pub mod decoder;
+use std::io::BufRead;
+
 pub mod error;
+pub mod reader;
 pub mod tlvs;
 pub mod types;
 
@@ -12,5 +14,5 @@ pub trait Tlv: Sized {
 }
 
 pub trait TlvReader: Sized {
-    fn read(bytes: &[u8]) -> error::Result<Self>;
+    fn read<R: BufRead>(buf: &mut R) -> error::Result<Self>;
 }
