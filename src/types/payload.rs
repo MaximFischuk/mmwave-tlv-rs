@@ -10,26 +10,25 @@ where
     pub value: T,
 }
 
-impl<T> TlvReader for TlvPayload<T>
-where
-    T: Tlv + TlvReader,
-{
-    fn read(bytes: &[u8]) -> error::Result<Self> {
-        if bytes.is_empty() {
-            return Err(error::TlvError::MissingTlvPayload);
-        }
-        let header = TlvHeader::read(
-            bytes
-                .get(..TLV_HEADER_LENGTH)
-                .ok_or(error::TlvError::InvalidTlvHeaderLength)?,
-        )?;
-        if bytes.len() != std::mem::size_of::<T>() + TLV_HEADER_LENGTH {
-            return Err(error::TlvError::InvalidTlvLength);
-        }
-        if T::TYPE != header.r#type {
-            return Err(error::TlvError::UnexpectedTlvType);
-        }
-        let value = TlvReader::read(&bytes[TLV_HEADER_LENGTH..])?;
-        Ok(TlvPayload { header, value })
-    }
+impl<T> TlvPayload<T> where T: Sized {}
+
+pub struct TlvPacket<'a> {
+    pub header: &'a TlvHeader,
+    pub payload: &'a [u8],
 }
+
+// impl<T> TlvReader for TlvPayload<T>
+// where
+//     T: Tlv + TlvReader,
+// {
+//     fn read<R: std::io::BufRead>(buf: &mut R) -> error::Result<Self> {
+//         let header = TlvHeader::read(buf)?;
+
+//         if T::TYPE != header.r#type {
+//             return Err(error::TlvError::UnexpectedTlvType);
+//         }
+
+//         let value = TlvReader::read(buf)?;
+//         Ok(TlvPayload { header, value })
+//     }
+// }

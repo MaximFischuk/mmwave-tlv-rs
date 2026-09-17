@@ -2,6 +2,8 @@ use std::io::{BufRead, Read};
 
 use crate::{MAGIC, Tlv, TlvReader, error, types::Frame};
 
+const BUFFER_SIZE: usize = 64 * 1024;
+
 pub struct FrameStreamReader<R> {
     reader: R,
     buffer: Vec<u8>,
@@ -11,7 +13,7 @@ impl<R: BufRead> FrameStreamReader<R> {
     pub fn new(reader: R) -> Self {
         Self {
             reader,
-            buffer: Vec::new(),
+            buffer: Vec::with_capacity(BUFFER_SIZE),
         }
     }
 

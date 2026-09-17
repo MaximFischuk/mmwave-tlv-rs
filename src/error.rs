@@ -18,6 +18,9 @@ pub enum TlvError {
     UnexpectedTlvType,
     #[error("Invalid point length")]
     InvalidPointLength,
+
+    #[error(transparent)]
+    IoError(#[from] std::io::Error),
 }
 
 pub type Result<T> = std::result::Result<T, TlvError>;

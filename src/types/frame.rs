@@ -1,8 +1,8 @@
-use std::io::BufReader;
+use std::io::BufRead;
 
 use crate::{
     Tlv, TlvReader, error,
-    types::{FrameHeader, TlvPayload},
+    types::{FrameHeader, TlvHeader, TlvPayload},
 };
 
 pub struct Frame<T> {
@@ -14,12 +14,20 @@ impl<T> TlvReader for Frame<T>
 where
     T: Tlv + TlvReader,
 {
-    fn read(bytes: &[u8]) -> error::Result<Self> {
-        let header = FrameHeader::read(&bytes[..FrameHeader::LENGTH])?;
+    fn read<R: BufRead>(buf: &mut R) -> error::Result<Self> {
+        let header = FrameHeader::read(buf)?;
 
         let mut payload = Vec::with_capacity(header.num_tlvs as usize);
-        let buffer = BufReader::new(&bytes[FrameHeader::LENGTH..]);
+
+        for _ in 0..header.num_tlvs {
+            let tlv_header = TlvHeader::read(buf)?;
+            let length = tlv_header.length;
+            // let tlv = TlvPayload::<T>::read_with_header(buf, tlv_header)?;
+            // payload.push(tlv);
+        }
 
         Ok(Frame { header, payload })
     }
 }
+
+// TODO: Stream reader

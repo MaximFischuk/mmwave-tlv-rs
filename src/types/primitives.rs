@@ -1,26 +1,24 @@
-use crate::{TlvReader, error};
+use crate::{Tlv, TlvReader, error};
+use std::io::BufRead;
 
 impl<const N: usize> TlvReader for [u8; N] {
-    fn read(bytes: &[u8]) -> error::Result<Self> {
-        if bytes.len() != N {
-            return Err(error::TlvError::InvalidArrayLength);
-        }
+    fn read<R: BufRead>(buf: &mut R) -> error::Result<Self> {
         let mut array = [0u8; N];
-        array.copy_from_slice(&bytes[..N]);
+        buf.read_exact(&mut array)?;
         Ok(array)
     }
 }
 
-impl<T: TlvReader> TlvReader for Vec<T> {
-    fn read(bytes: &[u8]) -> error::Result<Self> {
-        let mut vec = Vec::new();
-        if bytes.len() % std::mem::size_of::<T>() != 0 {
-            return Err(error::TlvError::InvalidArrayLength);
-        }
+impl<T: Tlv> Tlv for Vec<T> {}
 
-        for chunk in bytes.chunks(std::mem::size_of::<T>()) {
-            let item = T::read(chunk)?;
-            vec.push(item);
+impl<T: TlvReader> TlvReader for Vec<T> {
+    fn read<R: BufRead>(buf: &mut R) -> error::Result<Self> {
+        let mut vec = Vec::new();
+        loop {
+            match T::read(buf) {
+                Ok(item) => vec.push(item),
+                Err(_) => break,
+            }
         }
         Ok(vec)
     }
@@ -30,12 +28,9 @@ macro_rules! impl_tlv_for_primitive {
     ($($primitive:ty),+ $(,)?) => {
         $(
             impl TlvReader for $primitive {
-                fn read(bytes: &[u8]) -> error::Result<Self> {
-                    if bytes.len() != std::mem::size_of::<Self>() {
-                        return Err(error::TlvError::InvalidPrimitiveLength);
-                    }
+                fn read<R: BufRead>(buf: &mut R) -> error::Result<Self> {
                     let mut array = [0u8; std::mem::size_of::<Self>()];
-                    array.copy_from_slice(&bytes[..std::mem::size_of::<Self>()]);
+                    buf.read_exact(&mut array)?;
                     Ok(<$primitive>::from_le_bytes(array))
                 }
             }
