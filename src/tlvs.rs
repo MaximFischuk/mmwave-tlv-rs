@@ -16,6 +16,8 @@ pub struct Point {
 pub enum StandardTlv {
     #[tlv(type = 1)]
     PointCloud(PointCloud),
+    #[tlv(type = 301)]
+    ExtendedPointCloud(ExtendedPointCloud),
 }
 
 // TLV type ID: 316
@@ -28,11 +30,14 @@ pub struct AdcSample {
 }
 
 // TLV type ID: 301
+#[derive(crate::Tlv)]
+#[tlv(type = 301)]
 pub struct ExtendedPointCloud {
     pub units: ExtendedPointCloudUnits,
     pub points: Vec<ExtendedPoint>,
 }
 
+#[derive(crate::TlvReader)]
 pub struct ExtendedPointCloudUnits {
     pub position: f32,
     pub doppler: f32,
@@ -41,6 +46,7 @@ pub struct ExtendedPointCloudUnits {
     pub _reserved: [i16; 2],
 }
 
+#[derive(crate::TlvReader)]
 pub struct ExtendedPoint {
     pub x: i16,
     pub y: i16,

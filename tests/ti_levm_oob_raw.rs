@@ -10,11 +10,9 @@ fn decodes_and_prints_ti_levm_oob_raw_frames() {
     ))
     .expect("raw TLV capture should be present");
     let mut reader = FrameStreamReader::new(BufReader::new(file));
-    let mut frames: Vec<Frame<StandardTlv>> = Vec::new();
 
     while let Ok(Some(frame)) = reader.read_frame::<StandardTlv>() {
         print_frame(&frame);
-        frames.push(frame);
     }
 }
 
@@ -32,6 +30,16 @@ fn print_frame(frame: &Frame<StandardTlv>) {
                     println!(
                         "    Point {{ x: {}, y: {}, z: {}, doppler: {} }},",
                         point.x, point.y, point.z, point.doppler,
+                    );
+                }
+                println!("  ] }}");
+            }
+            StandardTlv::ExtendedPointCloud(extended_point_cloud) => {
+                println!("  ExtendedPointCloud {{ points: [");
+                for point in &extended_point_cloud.points {
+                    println!(
+                        "    ExtendedPoint {{ x: {}, y: {}, z: {}, doppler: {}, snr: {}, noise: {} }},",
+                        point.x, point.y, point.z, point.doppler, point.snr, point.noise,
                     );
                 }
                 println!("  ] }}");

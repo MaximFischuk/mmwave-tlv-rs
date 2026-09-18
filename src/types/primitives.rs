@@ -39,3 +39,24 @@ macro_rules! impl_tlv_for_primitive {
 impl_tlv_for_primitive!(
     u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64,
 );
+
+macro_rules! impl_tlv_for_primitive_array {
+    ($($primitive:ty),+ $(,)?) => {
+        $(
+            impl<const N: usize> TlvReader for [$primitive; N] {
+                fn read<R: BufRead>(buf: &mut R) -> error::Result<Self> {
+                    let mut array: [$primitive; N] = [0 as $primitive; N];
+                    for i in 0..N {
+                        array[i] = <$primitive>::read(buf)?;
+                    }
+                    Ok(array)
+                }
+            }
+        )+
+    };
+}
+
+// Exclude u8 from primitive arrays as it is handled separately
+impl_tlv_for_primitive_array!(
+    u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64,
+);
