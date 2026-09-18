@@ -2,20 +2,37 @@ use crate::{Tlv, TlvReader, error, types::TlvHeader};
 
 const TLV_HEADER_LENGTH: usize = std::mem::size_of::<TlvHeader>();
 
-pub struct TlvPayload<T>
-where
-    T: Sized,
-{
-    pub header: TlvHeader,
-    pub value: T,
-}
+// pub struct TlvPayload<T>
+// where
+//     T: Sized,
+// {
+//     pub header: TlvHeader,
+//     pub value: T,
+// }
 
-impl<T> TlvPayload<T> where T: Sized {}
+// impl<T> TlvPayload<T>
+// where
+//     T: Sized,
+// {
+//     pub fn new(header: TlvHeader, value: T) -> Self {
+//         Self { header, value }
+//     }
+// }
 
-pub struct TlvPacket<'a> {
-    pub header: &'a TlvHeader,
-    pub payload: &'a [u8],
-}
+// impl<T> TryFrom<TlvPacket<'_>> for TlvPayload<T>
+// where
+//     T: Tlv + Sized,
+// {
+//     type Error = error::TlvError;
+
+//     fn try_from(packet: TlvPacket<'_>) -> Result<Self, Self::Error> {
+//         let payload = T::from_packet(packet)?;
+//         Ok(TlvPayload {
+//             header: packet.header,
+//             value: payload,
+//         })
+//     }
+// }
 
 // impl<T> TlvReader for TlvPayload<T>
 // where

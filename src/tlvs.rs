@@ -1,21 +1,10 @@
-use crate::TlvReader;
-use std::io::BufRead;
-
-// #[derive(Decode, Type)]
-// #[tlv(type = 1)] # Add implementation of Tlv trait to allow use this struct as a TLV type in TlvPayload
+#[derive(crate::Tlv)]
+#[tlv(type = 1)]
 pub struct PointCloud {
     pub points: Vec<Point>,
 }
 
-impl crate::Tlv for PointCloud {}
-
-impl TlvReader for PointCloud {
-    fn read<R: BufRead>(buf: &mut R) -> crate::error::Result<Self> {
-        let points = Vec::<Point>::read(buf)?;
-        Ok(PointCloud { points })
-    }
-}
-
+#[derive(crate::TlvReader)]
 pub struct Point {
     pub x: f32,
     pub y: f32,
@@ -23,15 +12,10 @@ pub struct Point {
     pub doppler: f32,
 }
 
-impl TlvReader for Point {
-    fn read<R: BufRead>(buf: &mut R) -> crate::error::Result<Self> {
-        let x = TlvReader::read(buf)?;
-        let y = TlvReader::read(buf)?;
-        let z = TlvReader::read(buf)?;
-        let doppler = TlvReader::read(buf)?;
-
-        Ok(Point { x, y, z, doppler })
-    }
+#[derive(crate::Tlv)]
+pub enum StandardTlv {
+    #[tlv(type = 1)]
+    PointCloud(PointCloud),
 }
 
 // TLV type ID: 316
@@ -454,4 +438,58 @@ pub struct MinorPointCloud {
 // TLV type ID: 410
 pub struct ModelFlag {
     pub value: u8,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        Tlv,
+        types::{TlvHeader, TlvPacket},
+    };
+
+    fn point_packet(type_id: u32) -> (TlvHeader, [u8; 16]) {
+        let mut payload = [0; 16];
+        for (index, value) in [1.0_f32, 2.0, 3.0, 4.0].iter().enumerate() {
+            payload[index * 4..(index + 1) * 4].copy_from_slice(&value.to_le_bytes());
+        }
+        (
+            TlvHeader {
+                r#type: type_id,
+                length: payload.len() as u32,
+            },
+            payload,
+        )
+    }
+
+    #[test]
+    fn derives_decode_tagged_struct_and_enum() {
+        let (header, payload) = point_packet(1);
+        let point_cloud = PointCloud::from_packet(TlvPacket {
+            header: &header,
+            payload: &payload,
+        })
+        .unwrap();
+        assert_eq!(point_cloud.points.len(), 1);
+        assert_eq!(point_cloud.points[0].doppler, 4.0);
+
+        let tlv = StandardTlv::from_packet(TlvPacket {
+            header: &header,
+            payload: &payload,
+        })
+        .unwrap();
+        assert!(matches!(tlv, StandardTlv::PointCloud(_)));
+    }
+
+    #[test]
+    fn tagged_struct_rejects_wrong_type() {
+        let (header, payload) = point_packet(2);
+        assert!(
+            PointCloud::from_packet(TlvPacket {
+                header: &header,
+                payload: &payload,
+            })
+            .is_err()
+        );
+    }
 }

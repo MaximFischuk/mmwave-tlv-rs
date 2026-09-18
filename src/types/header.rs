@@ -1,6 +1,6 @@
 use std::io::BufRead;
 
-use crate::{MAGIC, TlvReader, error};
+use crate::{TlvReader, error};
 
 pub struct FrameHeader {
     pub version: u32,
@@ -24,12 +24,6 @@ impl FrameHeader {
 
 impl TlvReader for FrameHeader {
     fn read<R: BufRead>(buf: &mut R) -> error::Result<Self> {
-        let magic_word: [u8; 8] = TlvReader::read(buf)?;
-
-        if magic_word != MAGIC {
-            return Err(error::TlvError::InvalidMagicWord);
-        }
-
         let version = TlvReader::read(buf)?;
         let total_packet_len = TlvReader::read(buf)?;
         let platform = TlvReader::read(buf)?;

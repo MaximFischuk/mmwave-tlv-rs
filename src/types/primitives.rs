@@ -1,4 +1,4 @@
-use crate::{Tlv, TlvReader, error};
+use crate::{TlvReader, error};
 use std::io::BufRead;
 
 impl<const N: usize> TlvReader for [u8; N] {
@@ -8,8 +8,6 @@ impl<const N: usize> TlvReader for [u8; N] {
         Ok(array)
     }
 }
-
-impl<T: Tlv> Tlv for Vec<T> {}
 
 impl<T: TlvReader> TlvReader for Vec<T> {
     fn read<R: BufRead>(buf: &mut R) -> error::Result<Self> {

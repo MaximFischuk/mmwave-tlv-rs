@@ -21,7 +21,7 @@ impl<R: BufRead> FrameStreamReader<R> {
 
     pub fn read_frame<T>(&mut self) -> error::Result<Option<Frame<T>>>
     where
-        T: Tlv + TlvReader,
+        T: Tlv,
     {
         loop {
             if let Some(offset) = self
@@ -30,6 +30,7 @@ impl<R: BufRead> FrameStreamReader<R> {
                 .position(|window| window == MAGIC)
             {
                 self.buffer.advance(offset);
+                self.buffer.advance(MAGIC.len());
                 return Frame::read(self).map(Some);
             }
 
