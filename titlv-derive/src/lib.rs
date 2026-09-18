@@ -3,6 +3,10 @@ use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{Attribute, Data, DeriveInput, Error, Fields, LitInt, Result, parse_macro_input};
 
+/// Derives `titlv::Tlv` for a tagged TLV struct or dispatching enum.
+///
+/// A struct requires `#[tlv(type = <u32>)]`. Every enum variant must contain
+/// one tagged TLV type.
 #[proc_macro_derive(Tlv, attributes(tlv))]
 pub fn derive_tlv(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -11,6 +15,7 @@ pub fn derive_tlv(input: TokenStream) -> TokenStream {
         .into()
 }
 
+    /// Derives `titlv::TlvReader` for a struct with consecutively encoded fields.
 #[proc_macro_derive(TlvReader)]
 pub fn derive_tlv_reader(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

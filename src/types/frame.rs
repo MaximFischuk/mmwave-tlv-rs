@@ -5,6 +5,9 @@ use crate::{
     types::{FrameHeader, TlvHeader},
 };
 
+/// A decoded TI radar frame.
+///
+/// `payload` contains the TLVs that decoded successfully as `T`.
 pub struct Frame<T> {
     pub header: FrameHeader,
     pub payload: Vec<T>,
@@ -40,6 +43,7 @@ where
     }
 }
 
+/// Borrowed TLV header and payload passed to [`Tlv::from_packet`].
 pub struct TlvPacket<'a> {
     pub header: &'a TlvHeader,
     pub payload: &'a [u8],

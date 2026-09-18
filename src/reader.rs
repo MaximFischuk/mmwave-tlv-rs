@@ -6,12 +6,17 @@ use crate::{MAGIC, Tlv, TlvReader, error, types::Frame};
 
 const BUFFER_SIZE: usize = 64 * 1024;
 
+/// Reads complete TI radar frames from a buffered byte stream.
+///
+/// The reader discards bytes before the next [`MAGIC`] sequence and retains
+/// unread bytes between calls to [`Self::read_frame`].
 pub struct FrameStreamReader<R> {
     reader: R,
     buffer: BytesMut,
 }
 
 impl<R: BufRead> FrameStreamReader<R> {
+    /// Creates a frame reader over a buffered byte stream.
     pub fn new(reader: R) -> Self {
         Self {
             reader,
@@ -19,6 +24,10 @@ impl<R: BufRead> FrameStreamReader<R> {
         }
     }
 
+    /// Reads the next frame and decodes TLVs as `T`.
+    ///
+    /// Returns `Ok(None)` after the underlying stream reaches end of input.
+    /// TLVs rejected by `T::from_packet` are omitted from the frame payload.
     pub fn read_frame<T>(&mut self) -> error::Result<Option<Frame<T>>>
     where
         T: Tlv,
