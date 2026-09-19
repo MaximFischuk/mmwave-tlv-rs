@@ -12,11 +12,8 @@ impl<const N: usize> TlvReader for [u8; N] {
 impl<T: TlvReader> TlvReader for Vec<T> {
     fn read<R: BufRead>(buf: &mut R) -> error::Result<Self> {
         let mut vec = Vec::new();
-        loop {
-            match T::read(buf) {
-                Ok(item) => vec.push(item),
-                Err(_) => break,
-            }
+        while let Ok(item) = T::read(buf) {
+            vec.push(item);
         }
         Ok(vec)
     }

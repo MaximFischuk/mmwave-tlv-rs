@@ -1,3 +1,4 @@
+#![forbid(unsafe_code, unused_crate_dependencies, unused_imports, dead_code)]
 //! Decode Texas Instruments mmWave radar packets encoded as TLVs.
 //!
 //! [`reader::FrameStreamReader`] scans a byte stream for the TI magic word and

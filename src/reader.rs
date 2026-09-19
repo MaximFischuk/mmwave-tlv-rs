@@ -1,7 +1,11 @@
 use std::io::{BufRead, Read};
 
 use bytes::{Buf, BufMut, BytesMut};
+#[cfg(feature = "async")]
+use tokio::io::{AsyncBufRead, AsyncReadExt};
 
+#[cfg(feature = "async")]
+use crate::types::FrameHeader;
 use crate::{MAGIC, Tlv, TlvReader, error, types::Frame};
 
 const BUFFER_SIZE: usize = 64 * 1024;
@@ -88,5 +92,135 @@ impl<R: BufRead> BufRead for FrameStreamReader<R> {
         } else {
             self.buffer.advance(amount.min(self.buffer.len()));
         }
+    }
+}
+
+/// Reads complete TI radar frames from an asynchronous buffered byte stream.
+///
+/// The reader awaits data from the underlying stream and retains unread bytes
+/// between calls to [`Self::read_frame`].
+#[cfg(feature = "async")]
+pub struct AsyncFrameStreamReader<R> {
+    reader: R,
+    buffer: BytesMut,
+}
+
+#[cfg(feature = "async")]
+impl<R: AsyncBufRead + Unpin> AsyncFrameStreamReader<R> {
+    /// Creates an asynchronous frame reader over a buffered byte stream.
+    pub fn new(reader: R) -> Self {
+        Self {
+            reader,
+            buffer: BytesMut::with_capacity(BUFFER_SIZE),
+        }
+    }
+
+    /// Reads and decodes the next frame within the async runtime.
+    ///
+    /// Returns `Ok(None)` after the underlying stream reaches end of input.
+    /// TLVs rejected by `T::from_packet` are omitted from the frame payload.
+    pub async fn read_frame<T>(&mut self) -> error::Result<Option<Frame<T>>>
+    where
+        T: Tlv,
+    {
+        loop {
+            if let Some(offset) = self
+                .buffer
+                .windows(MAGIC.len())
+                .position(|window| window == MAGIC)
+            {
+                self.buffer.advance(offset + MAGIC.len());
+                self.read_until(FrameHeader::LENGTH - MAGIC.len()).await?;
+
+                let total_packet_len = u32::from_le_bytes(
+                    self.buffer[4..8]
+                        .try_into()
+                        .expect("frame header length was buffered"),
+                ) as usize;
+                if total_packet_len < FrameHeader::LENGTH {
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "frame length is smaller than its header",
+                    )
+                    .into());
+                }
+
+                let frame_len = total_packet_len - MAGIC.len();
+                self.read_until(frame_len).await?;
+                let mut frame_data = std::io::Cursor::new(self.buffer.split_to(frame_len));
+                return Frame::read(&mut frame_data).map(Some);
+            }
+
+            let retained = self.buffer.len().min(MAGIC.len() - 1);
+            if self.buffer.len() > retained {
+                self.buffer.advance(self.buffer.len() - retained);
+            }
+
+            if !self.read_more().await? {
+                self.buffer.clear();
+                return Ok(None);
+            }
+        }
+    }
+
+    async fn read_until(&mut self, length: usize) -> std::io::Result<()> {
+        while self.buffer.len() < length {
+            if !self.read_more().await? {
+                return Err(std::io::Error::from(std::io::ErrorKind::UnexpectedEof));
+            }
+        }
+        Ok(())
+    }
+
+    async fn read_more(&mut self) -> std::io::Result<bool> {
+        let mut chunk = [0; 4096];
+        let bytes_read = self.reader.read(&mut chunk).await?;
+        self.buffer.put_slice(&chunk[..bytes_read]);
+        Ok(bytes_read != 0)
+    }
+}
+
+#[cfg(all(test, feature = "async"))]
+mod tests {
+    use super::*;
+    use tokio::io::{AsyncWriteExt, BufReader};
+
+    #[derive(Debug, PartialEq)]
+    struct TestTlv(u32);
+
+    impl Tlv for TestTlv {
+        fn from_packet(packet: crate::types::TlvPacket<'_>) -> error::Result<Self> {
+            if packet.header.r#type != 7 {
+                return Err(error::TlvError::UnexpectedTlvType);
+            }
+
+            Ok(Self(u32::from_le_bytes(
+                packet.payload.try_into().expect("test payload is a u32"),
+            )))
+        }
+    }
+
+    #[tokio::test]
+    async fn reads_fragmented_frame_without_blocking() {
+        let mut bytes = vec![0, 1, 2];
+        bytes.extend_from_slice(&MAGIC);
+        for value in [1u32, 52, 0, 9, 0, 1, 1, 0] {
+            bytes.extend_from_slice(&value.to_le_bytes());
+        }
+        bytes.extend_from_slice(&7u32.to_le_bytes());
+        bytes.extend_from_slice(&4u32.to_le_bytes());
+        bytes.extend_from_slice(&42u32.to_le_bytes());
+
+        let (mut writer, reader) = tokio::io::duplex(BUFFER_SIZE);
+        writer.write_all(&bytes[..11]).await.unwrap();
+        writer.write_all(&bytes[11..]).await.unwrap();
+        drop(writer);
+
+        let mut reader = AsyncFrameStreamReader::new(BufReader::new(reader));
+        let frame = reader.read_frame::<TestTlv>().await.unwrap().unwrap();
+
+        assert_eq!(frame.header.frame_number, 9);
+        assert_eq!(frame.payload, vec![TestTlv(42)]);
+        assert!(reader.read_frame::<TestTlv>().await.unwrap().is_none());
     }
 }
