@@ -4,11 +4,15 @@ use bytes::{Buf, BufMut, BytesMut};
 #[cfg(feature = "async")]
 use tokio::io::{AsyncBufRead, AsyncReadExt};
 
-#[cfg(feature = "async")]
-use crate::types::FrameHeader;
-use crate::{MAGIC, Tlv, TlvReader, error, types::Frame};
+use crate::{
+    MAGIC, Tlv, TlvReader, error,
+    types::{Frame, FrameHeader},
+};
 
 const BUFFER_SIZE: usize = 64 * 1024;
+
+/// Byte range containing [`FrameHeader::total_packet_len`].
+const FRAME_LEN_RANGE: std::ops::Range<usize> = 4..8;
 
 /// Reads complete TI radar frames from a buffered byte stream.
 ///
@@ -37,30 +41,35 @@ impl<R: BufRead> FrameStreamReader<R> {
         T: Tlv,
     {
         loop {
-            if let Some(offset) = self
-                .buffer
-                .windows(MAGIC.len())
-                .position(|window| window == MAGIC)
-            {
-                self.buffer.advance(offset);
-                self.buffer.advance(MAGIC.len());
-                return Frame::read(self).map(Some);
+            if consume_magic(&mut self.buffer) {
+                self.read_until(FrameHeader::LENGTH - MAGIC.len())?;
+                let frame_len = frame_data_len(&self.buffer)?;
+                self.read_until(frame_len)?;
+                let mut frame_data = std::io::Cursor::new(self.buffer.split_to(frame_len));
+                return Frame::read(&mut frame_data).map(Some);
             }
 
-            let retained = self.buffer.len().min(MAGIC.len() - 1);
-            if self.buffer.len() > retained {
-                self.buffer.advance(self.buffer.len() - retained);
-            }
-
-            let mut chunk = [0; 4096];
-            let bytes_read = self.reader.read(&mut chunk)?;
-            if bytes_read == 0 {
+            if !self.read_more()? {
                 self.buffer.clear();
                 return Ok(None);
             }
-
-            self.buffer.put_slice(&chunk[..bytes_read]);
         }
+    }
+
+    fn read_until(&mut self, length: usize) -> std::io::Result<()> {
+        while self.buffer.len() < length {
+            if !self.read_more()? {
+                return Err(std::io::Error::from(std::io::ErrorKind::UnexpectedEof));
+            }
+        }
+        Ok(())
+    }
+
+    fn read_more(&mut self) -> std::io::Result<bool> {
+        let mut chunk = [0; 4096];
+        let bytes_read = self.reader.read(&mut chunk)?;
+        self.buffer.put_slice(&chunk[..bytes_read]);
+        Ok(bytes_read != 0)
     }
 }
 
@@ -124,36 +133,12 @@ impl<R: AsyncBufRead + Unpin> AsyncFrameStreamReader<R> {
         T: Tlv,
     {
         loop {
-            if let Some(offset) = self
-                .buffer
-                .windows(MAGIC.len())
-                .position(|window| window == MAGIC)
-            {
-                self.buffer.advance(offset + MAGIC.len());
+            if consume_magic(&mut self.buffer) {
                 self.read_until(FrameHeader::LENGTH - MAGIC.len()).await?;
-
-                let total_packet_len = u32::from_le_bytes(
-                    self.buffer[4..8]
-                        .try_into()
-                        .expect("frame header length was buffered"),
-                ) as usize;
-                if total_packet_len < FrameHeader::LENGTH {
-                    return Err(std::io::Error::new(
-                        std::io::ErrorKind::InvalidData,
-                        "frame length is smaller than its header",
-                    )
-                    .into());
-                }
-
-                let frame_len = total_packet_len - MAGIC.len();
+                let frame_len = frame_data_len(&self.buffer)?;
                 self.read_until(frame_len).await?;
                 let mut frame_data = std::io::Cursor::new(self.buffer.split_to(frame_len));
                 return Frame::read(&mut frame_data).map(Some);
-            }
-
-            let retained = self.buffer.len().min(MAGIC.len() - 1);
-            if self.buffer.len() > retained {
-                self.buffer.advance(self.buffer.len() - retained);
             }
 
             if !self.read_more().await? {
@@ -178,6 +163,36 @@ impl<R: AsyncBufRead + Unpin> AsyncFrameStreamReader<R> {
         self.buffer.put_slice(&chunk[..bytes_read]);
         Ok(bytes_read != 0)
     }
+}
+
+fn consume_magic(buffer: &mut BytesMut) -> bool {
+    if let Some(offset) = buffer
+        .windows(MAGIC.len())
+        .position(|window| window == MAGIC)
+    {
+        buffer.advance(offset + MAGIC.len());
+        return true;
+    }
+
+    let retained = buffer.len().min(MAGIC.len() - 1);
+    buffer.advance(buffer.len() - retained);
+    false
+}
+
+fn frame_data_len(buffer: &[u8]) -> error::Result<usize> {
+    let total_packet_len = u32::from_le_bytes(
+        buffer
+            .get(FRAME_LEN_RANGE)
+            .ok_or(error::TlvError::IncompleteFrameHeader)?
+            .try_into()
+            .map_err(|_| error::TlvError::InvalidFrameHeader)?,
+    ) as usize;
+
+    if total_packet_len < FrameHeader::LENGTH {
+        return Err(error::TlvError::FrameLengthSmallerThanHeader);
+    }
+
+    Ok(total_packet_len - MAGIC.len())
 }
 
 #[cfg(all(test, feature = "async"))]
