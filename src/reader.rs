@@ -183,13 +183,13 @@ fn frame_data_len(buffer: &[u8]) -> error::Result<usize> {
     let total_packet_len = u32::from_le_bytes(
         buffer
             .get(FRAME_LEN_RANGE)
-            .ok_or(error::TlvError::IncompleteFrameHeader)?
+            .ok_or(error::Error::IncompleteFrameHeader)?
             .try_into()
-            .map_err(|_| error::TlvError::InvalidFrameHeader)?,
+            .map_err(|_| error::Error::InvalidFrameHeader)?,
     ) as usize;
 
     if total_packet_len < FrameHeader::LENGTH {
-        return Err(error::TlvError::FrameLengthSmallerThanHeader);
+        return Err(error::Error::FrameLengthSmallerThanHeader);
     }
 
     Ok(total_packet_len - MAGIC.len())
@@ -206,7 +206,7 @@ mod tests {
     impl Tlv for TestTlv {
         fn from_packet(packet: crate::types::TlvPacket<'_>) -> error::Result<Self> {
             if packet.header.r#type != 7 {
-                return Err(error::TlvError::UnexpectedTlvType);
+                return Err(error::Error::UnexpectedTlvType);
             }
 
             Ok(Self(u32::from_le_bytes(

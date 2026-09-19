@@ -15,7 +15,7 @@ pub fn derive_tlv(input: TokenStream) -> TokenStream {
         .into()
 }
 
-    /// Derives `titlv::TlvReader` for a struct with consecutively encoded fields.
+/// Derives `titlv::TlvReader` for a struct with consecutively encoded fields.
 #[proc_macro_derive(TlvReader)]
 pub fn derive_tlv_reader(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -37,7 +37,7 @@ fn derive_tlv_impl(input: DeriveInput) -> Result<proc_macro2::TokenStream> {
                 impl ::titlv::Tlv for #name {
                     fn from_packet(packet: ::titlv::types::TlvPacket<'_>) -> ::titlv::error::Result<Self> {
                         if packet.header.r#type != #type_id {
-                            return Err(::titlv::error::TlvError::UnexpectedTlvType);
+                            return Err(::titlv::error::Error::UnexpectedTlvType);
                         }
 
                         <Self as ::titlv::TlvReader>::read(&mut &packet.payload[..])
@@ -80,7 +80,7 @@ fn derive_tlv_impl(input: DeriveInput) -> Result<proc_macro2::TokenStream> {
                     fn from_packet(packet: ::titlv::types::TlvPacket<'_>) -> ::titlv::error::Result<Self> {
                         match packet.header.r#type {
                             #(#variants)*
-                            _ => Err(::titlv::error::TlvError::UnexpectedTlvType),
+                            _ => Err(::titlv::error::Error::UnexpectedTlvType),
                         }
                     }
                 }

@@ -1,5 +1,5 @@
 #[derive(thiserror::Error, Debug)]
-pub enum TlvError {
+pub enum Error {
     #[error("Unexpected TLV type")]
     UnexpectedTlvType,
 
@@ -16,4 +16,4 @@ pub enum TlvError {
     IoError(#[from] std::io::Error),
 }
 
-pub type Result<T> = std::result::Result<T, TlvError>;
+pub type Result<T> = std::result::Result<T, Error>;
