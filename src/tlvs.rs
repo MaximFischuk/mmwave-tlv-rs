@@ -451,7 +451,7 @@ mod tests {
     use super::*;
     use crate::{
         Tlv,
-        types::{TlvHeader, TlvPacket},
+        types::{Tag, TlvHeader, TlvPacket},
     };
 
     fn point_packet(type_id: u32) -> (TlvHeader, [u8; 16]) {
@@ -461,7 +461,7 @@ mod tests {
         }
         (
             TlvHeader {
-                r#type: type_id,
+                r#type: Tag::try_from(type_id).unwrap(),
                 length: payload.len() as u32,
             },
             payload,

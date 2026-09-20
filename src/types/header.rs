@@ -1,6 +1,6 @@
 use std::io::BufRead;
 
-use crate::{TlvReader, error};
+use crate::{TlvReader, error, types::Tag};
 
 /// Metadata at the start of a TI radar frame, after the magic word.
 pub struct FrameHeader {
@@ -24,8 +24,8 @@ pub struct FrameHeader {
 
 /// Header that precedes one TLV payload.
 pub struct TlvHeader {
-    /// Numeric TLV type identifier.
-    pub r#type: u32,
+    /// TLV type identifier.
+    pub r#type: Tag,
     /// Length value reported in the TLV header.
     pub length: u32,
 }
@@ -60,7 +60,7 @@ impl TlvReader for FrameHeader {
 
 impl TlvReader for TlvHeader {
     fn read<R: BufRead>(buf: &mut R) -> error::Result<Self> {
-        let r#type = TlvReader::read(buf)?;
+        let r#type = Tag::read(buf)?;
         let length = TlvReader::read(buf)?;
 
         Ok(TlvHeader { r#type, length })

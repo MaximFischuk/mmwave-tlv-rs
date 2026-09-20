@@ -205,7 +205,7 @@ mod tests {
 
     impl Tlv for TestTlv {
         fn from_packet(packet: crate::types::TlvPacket<'_>) -> error::Result<Self> {
-            if packet.header.r#type != 7 {
+            if packet.header.r#type != crate::types::Tag::const_new::<7>() {
                 return Err(error::Error::UnexpectedTlvType);
             }
 

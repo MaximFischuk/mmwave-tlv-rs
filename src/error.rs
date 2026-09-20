@@ -12,6 +12,9 @@ pub enum Error {
     #[error("frame length is smaller than its header")]
     FrameLengthSmallerThanHeader,
 
+    #[error("tag value must be non-zero")]
+    NonZeroTagValue,
+
     #[error(transparent)]
     IoError(#[from] std::io::Error),
 }

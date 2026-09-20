@@ -36,7 +36,7 @@ fn derive_tlv_impl(input: DeriveInput) -> Result<proc_macro2::TokenStream> {
 
                 impl ::titlv::Tlv for #name {
                     fn from_packet(packet: ::titlv::types::TlvPacket<'_>) -> ::titlv::error::Result<Self> {
-                        if packet.header.r#type != #type_id {
+                        if packet.header.r#type != ::titlv::types::Tag::const_new::<#type_id>() {
                             return Err(::titlv::error::Error::UnexpectedTlvType);
                         }
 
@@ -68,7 +68,7 @@ fn derive_tlv_impl(input: DeriveInput) -> Result<proc_macro2::TokenStream> {
                     let variant_type = &fields.unnamed[0].ty;
 
                     Ok(quote! {
-                        #type_id => Ok(Self::#variant_name(
+                        tag if tag == ::titlv::types::Tag::const_new::<#type_id>() => Ok(Self::#variant_name(
                             <#variant_type as ::titlv::Tlv>::from_packet(packet)?,
                         )),
                     })
