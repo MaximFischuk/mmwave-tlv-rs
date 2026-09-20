@@ -35,13 +35,49 @@ fn print_frame(frame: &Frame<StandardTlv>) {
                 }
                 println!("  ] }}");
             }
-            StandardTlv::ExtendedPointCloud(extended_point_cloud) => {
-                println!("  ExtendedPointCloud {{ points: [");
-                for point in &extended_point_cloud.points {
+            StandardTlv::PointCloudSideInfo(side_info) => {
+                println!("  PointCloudSideInfo {{ points: [");
+                for point in &side_info.points {
                     println!(
-                        "    ExtendedPoint {{ x: {}, y: {}, z: {}, doppler: {}, snr: {}, noise: {} }},",
-                        point.x, point.y, point.z, point.doppler, point.snr, point.noise,
+                        "    PointSideInfo {{ snr: {}, noise: {} }},",
+                        point.snr, point.noise,
                     );
+                }
+                println!("  ] }}");
+            }
+            StandardTlv::RangeProfile(range_profile) => {
+                println!("  RangeProfile {{ bins: [");
+                for bin in &range_profile.bins {
+                    println!("    RangeBin {{ value: {} }},", bin.value);
+                }
+                println!("  ] }}");
+            }
+            StandardTlv::NoiseProfile(noise_profile) => {
+                println!("  NoiseProfile {{ bins: [");
+                for bin in &noise_profile.bins {
+                    println!("    NoiseBin {{ value: {} }},", bin.value);
+                }
+                println!("  ] }}");
+            }
+            StandardTlv::Stats(stats) => {
+                println!(
+                    "  Stats {{ arm_processing_time: {}, uart_transmit_time: {}, dsp_processing_time: {}, power_1v8: {}, power_3v3: {}, power_1v2: {}, power_1v2_rf: {} }}",
+                    stats.arm_processing_time,
+                    stats.uart_transmit_time,
+                    stats.dsp_processing_time,
+                    stats.power_1v8,
+                    stats.power_3v3,
+                    stats.power_1v2,
+                    stats.power_1v2_rf,
+                );
+            }
+            StandardTlv::TemperatureStats(temperature_stats) => {
+                println!(
+                    "  TemperatureStats {{ temp_report_valid: {}, time: {}, sensors: [",
+                    temperature_stats.temp_report_valid, temperature_stats.time,
+                );
+                for sensor in &temperature_stats.sensors {
+                    println!("    TemperatureSensor {{ value: {} }},", sensor.value);
                 }
                 println!("  ] }}");
             }

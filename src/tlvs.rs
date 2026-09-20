@@ -16,8 +16,16 @@ pub struct Point {
 pub enum StandardTlv {
     #[tlv(type = 1)]
     PointCloud(PointCloud),
-    #[tlv(type = 301)]
-    ExtendedPointCloud(ExtendedPointCloud),
+    #[tlv(type = 7)]
+    PointCloudSideInfo(PointCloudSideInfo),
+    #[tlv(type = 2)]
+    RangeProfile(RangeProfile),
+    #[tlv(type = 3)]
+    NoiseProfile(NoiseProfile),
+    #[tlv(type = 6)]
+    Stats(Stats),
+    #[tlv(type = 9)]
+    TemperatureStats(TemperatureStats),
 }
 
 // TLV type ID: 316
@@ -66,21 +74,39 @@ pub struct PresenceZone {
 }
 
 // TLV type ID: 7
+#[derive(crate::Tlv)]
+#[tlv(type = 7)]
 pub struct PointCloudSideInfo {
     pub points: Vec<PointSideInfo>,
 }
 
+#[derive(crate::TlvReader)]
 pub struct PointSideInfo {
     pub snr: u16,
     pub noise: u16,
 }
 
 // TLV type IDs: 2, 302, 303
+#[derive(crate::Tlv)]
+#[tlv(type = 2)]
 pub struct RangeProfile {
     pub bins: Vec<RangeBin>,
 }
 
+#[derive(crate::TlvReader)]
 pub struct RangeBin {
+    pub value: u32,
+}
+
+// TLV type ID: 3
+#[derive(crate::Tlv)]
+#[tlv(type = 3)]
+pub struct NoiseProfile {
+    pub bins: Vec<NoiseBin>,
+}
+
+#[derive(crate::TlvReader)]
+pub struct NoiseBin {
     pub value: u32,
 }
 
@@ -352,6 +378,8 @@ pub struct OccupancyBoxDecision {
 }
 
 // TLV type ID: 6
+#[derive(crate::Tlv)]
+#[tlv(type = 6)]
 pub struct Stats {
     pub arm_processing_time: u32,
     pub uart_transmit_time: u32,
@@ -360,6 +388,20 @@ pub struct Stats {
     pub power_3v3: u16,
     pub power_1v2: u16,
     pub power_1v2_rf: u16,
+}
+
+// TLV type ID: 9
+#[derive(crate::Tlv)]
+#[tlv(type = 9)]
+pub struct TemperatureStats {
+    pub temp_report_valid: u32,
+    pub time: u32,
+    pub sensors: Vec<TemperatureSensor>,
+}
+
+#[derive(crate::TlvReader)]
+pub struct TemperatureSensor {
+    pub value: i16,
 }
 
 // TLV type ID: 3002
