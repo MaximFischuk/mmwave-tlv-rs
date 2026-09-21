@@ -56,7 +56,7 @@ pub use titlv_derive::{Tlv, TlvReader};
 
 use std::io::BufRead;
 
-use crate::types::TlvPacket;
+use crate::types::{Tag, TlvPacket};
 
 /// Magic word that marks the beginning of a TI radar frame.
 pub const MAGIC: [u8; 8] = [0x02, 0x01, 0x04, 0x03, 0x06, 0x05, 0x08, 0x07];
@@ -66,6 +66,8 @@ pub const MAGIC: [u8; 8] = [0x02, 0x01, 0x04, 0x03, 0x06, 0x05, 0x08, 0x07];
 /// Implement this trait with `#[derive(Tlv)]` for a tagged struct or an enum
 /// that dispatches among several tagged structs.
 pub trait Tlv: Sized {
+    const TYPE: Tag;
+
     /// Decodes this value from a TLV header and payload.
     fn from_packet(packet: TlvPacket<'_>) -> error::Result<Self>;
 }

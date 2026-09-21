@@ -204,8 +204,10 @@ mod tests {
     struct TestTlv(u32);
 
     impl Tlv for TestTlv {
+        const TYPE: crate::types::Tag = crate::types::Tag::const_new::<7>();
+
         fn from_packet(packet: crate::types::TlvPacket<'_>) -> error::Result<Self> {
-            if packet.header.r#type != crate::types::Tag::const_new::<7>() {
+            if packet.header.r#type != Self::TYPE {
                 return Err(error::Error::UnexpectedTlvType);
             }
 

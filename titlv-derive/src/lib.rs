@@ -35,8 +35,10 @@ fn derive_tlv_impl(input: DeriveInput) -> Result<proc_macro2::TokenStream> {
                 #reader
 
                 impl ::titlv::Tlv for #name {
+                    const TYPE: ::titlv::types::Tag = ::titlv::types::Tag::const_new::<#type_id>();
+
                     fn from_packet(packet: ::titlv::types::TlvPacket<'_>) -> ::titlv::error::Result<Self> {
-                        if packet.header.r#type != ::titlv::types::Tag::const_new::<#type_id>() {
+                        if packet.header.r#type != Self::TYPE {
                             return Err(::titlv::error::Error::UnexpectedTlvType);
                         }
 
@@ -51,7 +53,6 @@ fn derive_tlv_impl(input: DeriveInput) -> Result<proc_macro2::TokenStream> {
                 .variants
                 .iter()
                 .map(|variant| {
-                    let type_id = tlv_type(&variant.attrs)?;
                     let variant_name = &variant.ident;
                     let Fields::Unnamed(fields) = &variant.fields else {
                         return Err(Error::new_spanned(
@@ -68,7 +69,7 @@ fn derive_tlv_impl(input: DeriveInput) -> Result<proc_macro2::TokenStream> {
                     let variant_type = &fields.unnamed[0].ty;
 
                     Ok(quote! {
-                        tag if tag == ::titlv::types::Tag::const_new::<#type_id>() => Ok(Self::#variant_name(
+                        tag if tag == <#variant_type as ::titlv::Tlv>::TYPE => Ok(Self::#variant_name(
                             <#variant_type as ::titlv::Tlv>::from_packet(packet)?,
                         )),
                     })
@@ -77,6 +78,8 @@ fn derive_tlv_impl(input: DeriveInput) -> Result<proc_macro2::TokenStream> {
 
             Ok(quote! {
                 impl ::titlv::Tlv for #name {
+                    const TYPE: ::titlv::types::Tag = ::titlv::types::Tag::UNKNOWN;
+
                     fn from_packet(packet: ::titlv::types::TlvPacket<'_>) -> ::titlv::error::Result<Self> {
                         match packet.header.r#type {
                             #(#variants)*

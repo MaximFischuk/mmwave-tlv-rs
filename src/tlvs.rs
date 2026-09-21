@@ -14,30 +14,20 @@ pub struct Point {
 
 #[derive(crate::Tlv)]
 pub enum StandardTlv {
-    #[tlv(type = 1)]
     PointCloud(PointCloud),
-    #[tlv(type = 7)]
     PointCloudSideInfo(PointCloudSideInfo),
-    #[tlv(type = 2)]
     RangeProfile(RangeProfile),
-    #[tlv(type = 3)]
     NoiseProfile(NoiseProfile),
-    #[tlv(type = 6)]
     Stats(Stats),
-    #[tlv(type = 9)]
     TemperatureStats(TemperatureStats),
 }
 
 #[derive(crate::Tlv)]
 pub enum PeopleTracking3dTlv {
-    #[tlv(type = 1010)]
     TrackList(TrackList),
-    #[tlv(type = 1011)]
     TargetIndexes(TargetIndexes),
-    #[tlv(type = 1012)]
     TrackHeights(TrackHeights),
 
-    #[tlv(type = 1)]
     PointCloud(PointCloud),
 }
 

@@ -4,6 +4,10 @@ use crate::TlvReader;
 pub struct Tag(u32);
 
 impl Tag {
+    /// Represents an unknown or uninitialized tag.
+    /// It used as a placeholder for enum variants that also implements the `Tlv` trait.
+    pub const UNKNOWN: Tag = Tag(0);
+
     /// Creates a new `Tag` with a compile-time constant value.
     ///
     /// # Panics
