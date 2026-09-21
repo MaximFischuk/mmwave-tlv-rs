@@ -136,8 +136,8 @@ Use the traits directly when the TLV type is known:
 let temperature = TemperatureTlv::from_packet(packet)?;
 ```
 
-An untagged `Tlv` struct can collect a frame directly. Use `Option<T>` for one
-TLV and `Vec<T>` for repeated TLVs:
+An untagged `Tlv` struct can collect a frame directly. Use `T` for a required
+TLV, `Option<T>` for an optional TLV, and `Vec<T>` for repeated TLVs:
 
 ```rust
 use titlv::prelude::*;
@@ -150,10 +150,13 @@ struct TemperatureTlv {
 
 #[derive(Tlv)]
 struct Payload {
+    stats: Stats,
     point_cloud: Option<PointCloud>,
     temperatures: Vec<TemperatureTlv>,
 }
 ```
+
+Frames missing a required `T` field return `Error::MissingRequiredTlv`.
 
 ## Errors
 

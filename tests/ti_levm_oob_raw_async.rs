@@ -27,7 +27,7 @@ fn print_frame(frame: &Frame<Vec<StandardTlv>>) {
         match tlv {
             StandardTlv::PointCloud(point_cloud) => {
                 println!("  PointCloud {{ points: [");
-                for point in &point_cloud.points {
+                for point in &point_cloud.0 {
                     println!(
                         "    Point {{ x: {}, y: {}, z: {}, doppler: {} }},",
                         point.x, point.y, point.z, point.doppler,

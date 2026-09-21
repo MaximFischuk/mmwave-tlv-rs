@@ -13,19 +13,38 @@ pub struct Frame<T> {
 
 /// Collects decoded TLVs into a frame payload.
 pub trait FramePayload: Sized {
-    fn with_capacity(capacity: usize) -> Self;
+    type Builder: FramePayloadBuilder<Payload = Self>;
+
+    fn builder(capacity: usize) -> Self::Builder;
+}
+
+/// Builds a decoded frame payload from its TLV packets.
+pub trait FramePayloadBuilder {
+    type Payload;
+
     fn push(&mut self, packet: TlvPacket<'_>);
+    fn finish(self) -> error::Result<Self::Payload>;
 }
 
 impl<T: Tlv> FramePayload for Vec<T> {
-    fn with_capacity(capacity: usize) -> Self {
+    type Builder = Self;
+
+    fn builder(capacity: usize) -> Self::Builder {
         Vec::with_capacity(capacity)
     }
+}
+
+impl<T: Tlv> FramePayloadBuilder for Vec<T> {
+    type Payload = Self;
 
     fn push(&mut self, packet: TlvPacket<'_>) {
         if let Ok(tlv) = T::from_packet(packet) {
             self.push(tlv);
         }
+    }
+
+    fn finish(self) -> error::Result<Self::Payload> {
+        Ok(self)
     }
 }
 
@@ -36,7 +55,7 @@ where
     fn read<R: BufRead>(buf: &mut R) -> error::Result<Self> {
         let header = FrameHeader::read(buf)?;
 
-        let mut payload = T::with_capacity(header.num_tlvs as usize);
+        let mut payload = T::builder(header.num_tlvs as usize);
 
         for _ in 0..header.num_tlvs {
             let tlv_header = TlvHeader::read(buf)?;
@@ -53,7 +72,10 @@ where
             payload.push(packet);
         }
 
-        Ok(Frame { header, payload })
+        Ok(Frame {
+            header,
+            payload: payload.finish()?,
+        })
     }
 }
 

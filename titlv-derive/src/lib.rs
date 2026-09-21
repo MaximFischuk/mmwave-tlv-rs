@@ -9,8 +9,8 @@ use syn::{
 /// Derives decoding for a tagged TLV, dispatching enum, or frame payload struct.
 ///
 /// A tagged struct requires `#[tlv(type = <u32>)]`. An untagged struct collects
-/// TLVs into `Option<T>` and `Vec<T>` fields. Every enum variant must contain one
-/// tagged TLV type.
+/// TLVs into `T`, `Option<T>`, and `Vec<T>` fields. Every enum variant must contain
+/// one tagged TLV type.
 #[proc_macro_derive(Tlv, attributes(tlv))]
 pub fn derive_tlv(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -110,20 +110,26 @@ fn derive_frame_payload_impl(input: &DeriveInput) -> Result<proc_macro2::TokenSt
     let Fields::Named(fields) = &data.fields else {
         return Err(Error::new_spanned(
             &data.fields,
-            "frame payload must be a struct with named Option<T> or Vec<T> fields",
+            "frame payload must be a struct with named T, Option<T>, or Vec<T> fields",
         ));
     };
     let name = &input.ident;
+    let builder_name = format_ident!("__{name}FramePayloadBuilder");
+    let mut builder_fields = Vec::new();
     let mut initializers = Vec::new();
+    let mut finishers = Vec::new();
     let mut matches = Vec::new();
 
     for field in &fields.named {
         let field_name = field.ident.as_ref().unwrap();
+        let field_type = &field.ty;
         let (collection, inner_type) = collection_type(&field.ty)?;
 
         match collection {
             "Option" => {
+                builder_fields.push(quote! { #field_name: #field_type });
                 initializers.push(quote! { #field_name: None });
+                finishers.push(quote! { #field_name: self.#field_name });
                 matches.push(quote! {
                     tag if tag == <#inner_type as ::titlv::Tlv>::TYPE => {
                         if let Ok(value) = <#inner_type as ::titlv::Tlv>::from_packet(packet) {
@@ -133,11 +139,27 @@ fn derive_frame_payload_impl(input: &DeriveInput) -> Result<proc_macro2::TokenSt
                 });
             }
             "Vec" => {
+                builder_fields.push(quote! { #field_name: #field_type });
                 initializers.push(quote! { #field_name: ::std::vec::Vec::new() });
+                finishers.push(quote! { #field_name: self.#field_name });
                 matches.push(quote! {
                     tag if tag == <#inner_type as ::titlv::Tlv>::TYPE => {
                         if let Ok(value) = <#inner_type as ::titlv::Tlv>::from_packet(packet) {
                             self.#field_name.push(value);
+                        }
+                    }
+                });
+            }
+            "Required" => {
+                builder_fields.push(quote! { #field_name: ::std::option::Option<#inner_type> });
+                initializers.push(quote! { #field_name: None });
+                finishers.push(quote! {
+                    #field_name: self.#field_name.ok_or(::titlv::error::Error::MissingRequiredTlv)?
+                });
+                matches.push(quote! {
+                    tag if tag == <#inner_type as ::titlv::Tlv>::TYPE => {
+                        if let Ok(value) = <#inner_type as ::titlv::Tlv>::from_packet(packet) {
+                            self.#field_name = Some(value);
                         }
                     }
                 });
@@ -147,10 +169,21 @@ fn derive_frame_payload_impl(input: &DeriveInput) -> Result<proc_macro2::TokenSt
     }
 
     Ok(quote! {
+        #[doc(hidden)]
+        pub struct #builder_name {
+            #(#builder_fields),*
+        }
+
         impl ::titlv::types::FramePayload for #name {
-            fn with_capacity(_capacity: usize) -> Self {
-                Self { #(#initializers),* }
+            type Builder = #builder_name;
+
+            fn builder(_capacity: usize) -> Self::Builder {
+                #builder_name { #(#initializers),* }
             }
+        }
+
+        impl ::titlv::types::FramePayloadBuilder for #builder_name {
+            type Payload = #name;
 
             fn push(&mut self, packet: ::titlv::types::TlvPacket<'_>) {
                 match packet.header.r#type {
@@ -158,21 +191,25 @@ fn derive_frame_payload_impl(input: &DeriveInput) -> Result<proc_macro2::TokenSt
                     _ => {}
                 }
             }
+
+            fn finish(self) -> ::titlv::error::Result<#name> {
+                Ok(#name { #(#finishers),* })
+            }
         }
     })
 }
 
 fn collection_type(ty: &Type) -> Result<(&str, &Type)> {
     let Type::Path(path) = ty else {
-        return Err(Error::new_spanned(ty, "expected Option<T> or Vec<T>"));
+        return Ok(("Required", ty));
     };
     let Some(segment) = path.path.segments.last() else {
-        return Err(Error::new_spanned(ty, "expected Option<T> or Vec<T>"));
+        return Ok(("Required", ty));
     };
     let collection = match segment.ident.to_string().as_str() {
         "Option" => "Option",
         "Vec" => "Vec",
-        _ => return Err(Error::new_spanned(ty, "expected Option<T> or Vec<T>")),
+        _ => return Ok(("Required", ty)),
     };
     let PathArguments::AngleBracketed(arguments) = &segment.arguments else {
         return Err(Error::new_spanned(ty, "expected Option<T> or Vec<T>"));

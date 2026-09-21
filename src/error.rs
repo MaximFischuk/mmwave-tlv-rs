@@ -15,6 +15,9 @@ pub enum Error {
     #[error("tag value must be non-zero")]
     NonZeroTagValue,
 
+    #[error("required frame TLV is missing")]
+    MissingRequiredTlv,
+
     #[error(transparent)]
     IoError(#[from] std::io::Error),
 }

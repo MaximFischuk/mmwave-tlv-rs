@@ -1,8 +1,6 @@
 #[derive(crate::Tlv)]
 #[tlv(type = 1)]
-pub struct PointCloud {
-    pub points: Vec<Point>,
-}
+pub struct PointCloud(pub Vec<Point>);
 
 #[derive(crate::TlvReader)]
 pub struct Point {
@@ -14,10 +12,10 @@ pub struct Point {
 
 #[derive(crate::Tlv)]
 pub struct PeopleTracking3dTlvS {
-    pub tracks: Vec<TrackList>,
+    pub tracks: TrackList,
     pub target_indexes: Vec<TargetIndexes>,
     pub track_heights: Vec<TrackHeights>,
-    pub point_cloud: Option<PointCloud>,
+    pub point_cloud: Option<CompressedSphericalPointCloud>,
 }
 
 #[derive(crate::Tlv)]
@@ -158,11 +156,14 @@ pub struct SphericalPoint {
 }
 
 // TLV type ID: 1020
+#[derive(crate::Tlv)]
+#[tlv(type = 1020)]
 pub struct CompressedSphericalPointCloud {
     pub units: CompressedPointUnits,
     pub points: Vec<CompressedSphericalPoint>,
 }
 
+#[derive(crate::TlvReader)]
 pub struct CompressedPointUnits {
     pub elevation: f32,
     pub azimuth: f32,
@@ -171,6 +172,7 @@ pub struct CompressedPointUnits {
     pub snr: f32,
 }
 
+#[derive(crate::TlvReader)]
 pub struct CompressedSphericalPoint {
     pub elevation: i8,
     pub azimuth: i8,
@@ -182,9 +184,7 @@ pub struct CompressedSphericalPoint {
 // TLV type IDs: 1010, 308
 #[derive(crate::Tlv)]
 #[tlv(type = 1010)]
-pub struct TrackList {
-    pub tracks: Vec<Track>,
-}
+pub struct TrackList(pub Vec<Track>);
 
 #[derive(crate::TlvReader)]
 pub struct Track {
@@ -538,8 +538,8 @@ mod tests {
             payload: &payload,
         })
         .unwrap();
-        assert_eq!(point_cloud.points.len(), 1);
-        assert_eq!(point_cloud.points[0].doppler, 4.0);
+        assert_eq!(point_cloud.0.len(), 1);
+        assert_eq!(point_cloud.0[0].doppler, 4.0);
 
         let tlv = StandardTlv::from_packet(TlvPacket {
             header: &header,
@@ -564,24 +564,43 @@ mod tests {
     #[test]
     fn frame_decodes_tlvs_into_struct_fields() {
         let mut bytes = Vec::new();
-        for value in [0_u32, 0, 0, 1, 0, 0, 3, 0] {
+        for value in [0_u32, 0, 0, 1, 0, 0, 4, 0] {
             bytes.extend_from_slice(&value.to_le_bytes());
         }
+        let track = [0_u8; 112];
+        bytes.extend_from_slice(&1010_u32.to_le_bytes());
+        bytes.extend_from_slice(&(track.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(&track);
         for indexes in [&[1_u8, 2][..], &[3_u8][..]] {
             bytes.extend_from_slice(&1011_u32.to_le_bytes());
             bytes.extend_from_slice(&(indexes.len() as u32).to_le_bytes());
             bytes.extend_from_slice(indexes);
         }
-        let (_, point) = point_packet(1);
-        bytes.extend_from_slice(&1_u32.to_le_bytes());
-        bytes.extend_from_slice(&(point.len() as u32).to_le_bytes());
-        bytes.extend_from_slice(&point);
+        let compressed_point_cloud = [0_u8; 20];
+        bytes.extend_from_slice(&1020_u32.to_le_bytes());
+        bytes.extend_from_slice(&(compressed_point_cloud.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(&compressed_point_cloud);
 
         let frame = Frame::<PeopleTracking3dTlvS>::read(&mut &bytes[..]).unwrap();
 
+        assert_eq!(frame.payload.tracks.0.len(), 1);
         assert_eq!(frame.payload.target_indexes.len(), 2);
         assert_eq!(frame.payload.target_indexes[0].indexes[1].value, 2);
         assert_eq!(frame.payload.target_indexes[1].indexes[0].value, 3);
-        assert_eq!(frame.payload.point_cloud.unwrap().points[0].x, 1.0);
+        assert!(frame.payload.point_cloud.is_some());
+    }
+
+    #[test]
+    fn frame_requires_direct_tlv_fields() {
+        let bytes = [0_u8; 32];
+        let error = match Frame::<PeopleTracking3dTlvS>::read(&mut &bytes[..]) {
+            Err(error) => error,
+            Ok(_) => panic!("frame without tracks should fail"),
+        };
+
+        assert!(
+            matches!(&error, &crate::error::Error::MissingRequiredTlv),
+            "{error:?}"
+        );
     }
 }
