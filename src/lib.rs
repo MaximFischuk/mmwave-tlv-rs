@@ -16,7 +16,7 @@
 //!     let file = File::open("radar.bin")?;
 //!     let mut reader = FrameStreamReader::new(BufReader::new(file));
 //!
-//!     while let Some(frame) = reader.read_frame::<StandardTlv>()? {
+//!     while let Some(frame) = reader.read_frame::<Vec<StandardTlv>>()? {
 //!         println!("frame {} contains {} supported TLVs", frame.header.frame_number, frame.payload.len());
 //!     }
 //!

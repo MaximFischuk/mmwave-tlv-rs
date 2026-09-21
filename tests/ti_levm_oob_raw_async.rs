@@ -12,12 +12,12 @@ async fn decodes_and_prints_ti_levm_oob_raw_frames_async() {
     .expect("raw TLV capture should be present");
     let mut reader = AsyncFrameStreamReader::new(BufReader::new(file));
 
-    while let Ok(Some(frame)) = reader.read_frame::<StandardTlv>().await {
+    while let Ok(Some(frame)) = reader.read_frame::<Vec<StandardTlv>>().await {
         print_frame(&frame);
     }
 }
 
-fn print_frame(frame: &Frame<StandardTlv>) {
+fn print_frame(frame: &Frame<Vec<StandardTlv>>) {
     println!(
         "Frame {{ number: {}, detected_objects: {}, tlvs: {} }}",
         frame.header.frame_number, frame.header.num_detected_obj, frame.header.num_tlvs,

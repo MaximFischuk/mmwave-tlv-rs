@@ -11,12 +11,12 @@ fn decodes_and_prints_ti_levm_oob_raw_frames() {
     .expect("raw TLV capture should be present");
     let mut reader = FrameStreamReader::new(BufReader::new(file));
 
-    while let Ok(Some(frame)) = reader.read_frame::<StandardTlv>() {
+    while let Ok(Some(frame)) = reader.read_frame::<Vec<StandardTlv>>() {
         print_frame(&frame);
     }
 }
 
-fn print_frame(frame: &Frame<StandardTlv>) {
+fn print_frame(frame: &Frame<Vec<StandardTlv>>) {
     println!(
         "Frame {{ number: {}, detected_objects: {}, tlvs: {} }}",
         frame.header.frame_number, frame.header.num_detected_obj, frame.header.num_tlvs,

@@ -1,12 +1,16 @@
 use proc_macro::TokenStream;
 
 use quote::{format_ident, quote};
-use syn::{Attribute, Data, DeriveInput, Error, Fields, LitInt, Result, parse_macro_input};
+use syn::{
+    Attribute, Data, DeriveInput, Error, Fields, GenericArgument, LitInt, PathArguments, Result,
+    Type, parse_macro_input,
+};
 
-/// Derives `titlv::Tlv` for a tagged TLV struct or dispatching enum.
+/// Derives decoding for a tagged TLV, dispatching enum, or frame payload struct.
 ///
-/// A struct requires `#[tlv(type = <u32>)]`. Every enum variant must contain
-/// one tagged TLV type.
+/// A tagged struct requires `#[tlv(type = <u32>)]`. An untagged struct collects
+/// TLVs into `Option<T>` and `Vec<T>` fields. Every enum variant must contain one
+/// tagged TLV type.
 #[proc_macro_derive(Tlv, attributes(tlv))]
 pub fn derive_tlv(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -27,25 +31,28 @@ pub fn derive_tlv_reader(input: TokenStream) -> TokenStream {
 fn derive_tlv_impl(input: DeriveInput) -> Result<proc_macro2::TokenStream> {
     match &input.data {
         Data::Struct(_) => {
-            let reader = derive_reader_impl(&input)?;
-            let type_id = tlv_type(&input.attrs)?;
-            let name = &input.ident;
+            if let Some(type_id) = tlv_type(&input.attrs)? {
+                let reader = derive_reader_impl(&input)?;
+                let name = &input.ident;
 
-            Ok(quote! {
-                #reader
+                Ok(quote! {
+                    #reader
 
-                impl ::titlv::Tlv for #name {
-                    const TYPE: ::titlv::types::Tag = ::titlv::types::Tag::const_new::<#type_id>();
+                    impl ::titlv::Tlv for #name {
+                        const TYPE: ::titlv::types::Tag = ::titlv::types::Tag::const_new::<#type_id>();
 
-                    fn from_packet(packet: ::titlv::types::TlvPacket<'_>) -> ::titlv::error::Result<Self> {
-                        if packet.header.r#type != Self::TYPE {
-                            return Err(::titlv::error::Error::UnexpectedTlvType);
+                        fn from_packet(packet: ::titlv::types::TlvPacket<'_>) -> ::titlv::error::Result<Self> {
+                            if packet.header.r#type != Self::TYPE {
+                                return Err(::titlv::error::Error::UnexpectedTlvType);
+                            }
+
+                            <Self as ::titlv::TlvReader>::read(&mut &packet.payload[..])
                         }
-
-                        <Self as ::titlv::TlvReader>::read(&mut &packet.payload[..])
                     }
-                }
-            })
+                })
+            } else {
+                derive_frame_payload_impl(&input)
+            }
         }
         Data::Enum(data) => {
             let name = &input.ident;
@@ -94,6 +101,87 @@ fn derive_tlv_impl(input: DeriveInput) -> Result<proc_macro2::TokenStream> {
             "Tlv can only be derived for structs and enums",
         )),
     }
+}
+
+fn derive_frame_payload_impl(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
+    let Data::Struct(data) = &input.data else {
+        unreachable!();
+    };
+    let Fields::Named(fields) = &data.fields else {
+        return Err(Error::new_spanned(
+            &data.fields,
+            "frame payload must be a struct with named Option<T> or Vec<T> fields",
+        ));
+    };
+    let name = &input.ident;
+    let mut initializers = Vec::new();
+    let mut matches = Vec::new();
+
+    for field in &fields.named {
+        let field_name = field.ident.as_ref().unwrap();
+        let (collection, inner_type) = collection_type(&field.ty)?;
+
+        match collection {
+            "Option" => {
+                initializers.push(quote! { #field_name: None });
+                matches.push(quote! {
+                    tag if tag == <#inner_type as ::titlv::Tlv>::TYPE => {
+                        if let Ok(value) = <#inner_type as ::titlv::Tlv>::from_packet(packet) {
+                            self.#field_name = Some(value);
+                        }
+                    }
+                });
+            }
+            "Vec" => {
+                initializers.push(quote! { #field_name: ::std::vec::Vec::new() });
+                matches.push(quote! {
+                    tag if tag == <#inner_type as ::titlv::Tlv>::TYPE => {
+                        if let Ok(value) = <#inner_type as ::titlv::Tlv>::from_packet(packet) {
+                            self.#field_name.push(value);
+                        }
+                    }
+                });
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    Ok(quote! {
+        impl ::titlv::types::FramePayload for #name {
+            fn with_capacity(_capacity: usize) -> Self {
+                Self { #(#initializers),* }
+            }
+
+            fn push(&mut self, packet: ::titlv::types::TlvPacket<'_>) {
+                match packet.header.r#type {
+                    #(#matches,)*
+                    _ => {}
+                }
+            }
+        }
+    })
+}
+
+fn collection_type(ty: &Type) -> Result<(&str, &Type)> {
+    let Type::Path(path) = ty else {
+        return Err(Error::new_spanned(ty, "expected Option<T> or Vec<T>"));
+    };
+    let Some(segment) = path.path.segments.last() else {
+        return Err(Error::new_spanned(ty, "expected Option<T> or Vec<T>"));
+    };
+    let collection = match segment.ident.to_string().as_str() {
+        "Option" => "Option",
+        "Vec" => "Vec",
+        _ => return Err(Error::new_spanned(ty, "expected Option<T> or Vec<T>")),
+    };
+    let PathArguments::AngleBracketed(arguments) = &segment.arguments else {
+        return Err(Error::new_spanned(ty, "expected Option<T> or Vec<T>"));
+    };
+    let [GenericArgument::Type(inner_type)] = arguments.args.iter().collect::<Vec<_>>()[..] else {
+        return Err(Error::new_spanned(ty, "expected Option<T> or Vec<T>"));
+    };
+
+    Ok((collection, inner_type))
 }
 
 fn derive_reader_impl(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
@@ -146,7 +234,7 @@ fn derive_reader_impl(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
     })
 }
 
-fn tlv_type(attributes: &[Attribute]) -> Result<LitInt> {
+fn tlv_type(attributes: &[Attribute]) -> Result<Option<LitInt>> {
     let mut type_id = None;
 
     for attribute in attributes {
@@ -164,10 +252,5 @@ fn tlv_type(attributes: &[Attribute]) -> Result<LitInt> {
         }
     }
 
-    type_id.ok_or_else(|| {
-        Error::new(
-            proc_macro2::Span::call_site(),
-            "missing #[tlv(type = <u32>)]",
-        )
-    })
+    Ok(type_id)
 }

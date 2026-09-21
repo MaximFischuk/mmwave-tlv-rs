@@ -13,6 +13,14 @@ pub struct Point {
 }
 
 #[derive(crate::Tlv)]
+pub struct PeopleTracking3dTlvS {
+    pub tracks: Vec<TrackList>,
+    pub target_indexes: Vec<TargetIndexes>,
+    pub track_heights: Vec<TrackHeights>,
+    pub point_cloud: Option<PointCloud>,
+}
+
+#[derive(crate::Tlv)]
 pub enum StandardTlv {
     PointCloud(PointCloud),
     PointCloudSideInfo(PointCloudSideInfo),
@@ -504,8 +512,8 @@ pub struct ModelFlag {
 mod tests {
     use super::*;
     use crate::{
-        Tlv,
-        types::{Tag, TlvHeader, TlvPacket},
+        Tlv, TlvReader,
+        types::{Frame, Tag, TlvHeader, TlvPacket},
     };
 
     fn point_packet(type_id: u32) -> (TlvHeader, [u8; 16]) {
@@ -551,5 +559,29 @@ mod tests {
             })
             .is_err()
         );
+    }
+
+    #[test]
+    fn frame_decodes_tlvs_into_struct_fields() {
+        let mut bytes = Vec::new();
+        for value in [0_u32, 0, 0, 1, 0, 0, 3, 0] {
+            bytes.extend_from_slice(&value.to_le_bytes());
+        }
+        for indexes in [&[1_u8, 2][..], &[3_u8][..]] {
+            bytes.extend_from_slice(&1011_u32.to_le_bytes());
+            bytes.extend_from_slice(&(indexes.len() as u32).to_le_bytes());
+            bytes.extend_from_slice(indexes);
+        }
+        let (_, point) = point_packet(1);
+        bytes.extend_from_slice(&1_u32.to_le_bytes());
+        bytes.extend_from_slice(&(point.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(&point);
+
+        let frame = Frame::<PeopleTracking3dTlvS>::read(&mut &bytes[..]).unwrap();
+
+        assert_eq!(frame.payload.target_indexes.len(), 2);
+        assert_eq!(frame.payload.target_indexes[0].indexes[1].value, 2);
+        assert_eq!(frame.payload.target_indexes[1].indexes[0].value, 3);
+        assert_eq!(frame.payload.point_cloud.unwrap().points[0].x, 1.0);
     }
 }

@@ -5,8 +5,8 @@ use bytes::{Buf, BufMut, BytesMut};
 use tokio::io::{AsyncBufRead, AsyncReadExt};
 
 use crate::{
-    MAGIC, Tlv, TlvReader, error,
-    types::{Frame, FrameHeader},
+    MAGIC, TlvReader, error,
+    types::{Frame, FrameHeader, FramePayload},
 };
 
 const BUFFER_SIZE: usize = 64 * 1024;
@@ -32,13 +32,13 @@ impl<R: BufRead> FrameStreamReader<R> {
         }
     }
 
-    /// Reads the next frame and decodes TLVs as `T`.
+    /// Reads the next frame and decodes its payload as `T`.
     ///
     /// Returns `Ok(None)` after the underlying stream reaches end of input.
-    /// TLVs rejected by `T::from_packet` are omitted from the frame payload.
+    /// TLVs rejected by the payload type are omitted.
     pub fn read_frame<T>(&mut self) -> error::Result<Option<Frame<T>>>
     where
-        T: Tlv,
+        T: FramePayload,
     {
         loop {
             if consume_magic(&mut self.buffer) {
@@ -127,10 +127,10 @@ impl<R: AsyncBufRead + Unpin> AsyncFrameStreamReader<R> {
     /// Reads and decodes the next frame within the async runtime.
     ///
     /// Returns `Ok(None)` after the underlying stream reaches end of input.
-    /// TLVs rejected by `T::from_packet` are omitted from the frame payload.
+    /// TLVs rejected by the payload type are omitted.
     pub async fn read_frame<T>(&mut self) -> error::Result<Option<Frame<T>>>
     where
-        T: Tlv,
+        T: FramePayload,
     {
         loop {
             if consume_magic(&mut self.buffer) {
@@ -198,6 +198,7 @@ fn frame_data_len(buffer: &[u8]) -> error::Result<usize> {
 #[cfg(all(test, feature = "async"))]
 mod tests {
     use super::*;
+    use crate::Tlv;
     use tokio::io::{AsyncWriteExt, BufReader};
 
     #[derive(Debug, PartialEq)]
@@ -234,10 +235,10 @@ mod tests {
         drop(writer);
 
         let mut reader = AsyncFrameStreamReader::new(BufReader::new(reader));
-        let frame = reader.read_frame::<TestTlv>().await.unwrap().unwrap();
+        let frame = reader.read_frame::<Vec<TestTlv>>().await.unwrap().unwrap();
 
         assert_eq!(frame.header.frame_number, 9);
         assert_eq!(frame.payload, vec![TestTlv(42)]);
-        assert!(reader.read_frame::<TestTlv>().await.unwrap().is_none());
+        assert!(reader.read_frame::<Vec<TestTlv>>().await.unwrap().is_none());
     }
 }

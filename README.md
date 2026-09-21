@@ -22,7 +22,7 @@ titlv = { path = "../titlv-rs" }
 ## Read frames
 
 Wrap the radar byte stream in a `BufReader`, construct a `FrameStreamReader`,
-and read frames as `StandardTlv`. The reader skips bytes before a frame's magic
+and read frames as `Vec<StandardTlv>`. The reader skips bytes before a frame's magic
 word and returns `None` at end of stream.
 
 ```no_run
@@ -34,7 +34,7 @@ fn main() -> Result<()> {
     let file = File::open("radar.bin")?;
     let mut reader = FrameStreamReader::new(BufReader::new(file));
 
-    while let Some(frame) = reader.read_frame::<StandardTlv>()? {
+    while let Some(frame) = reader.read_frame::<Vec<StandardTlv>>()? {
         println!(
             "frame {}: {} supported TLVs",
             frame.header.frame_number,
@@ -48,9 +48,7 @@ fn main() -> Result<()> {
                         println!("x={}, y={}, z={}, doppler={}", point.x, point.y, point.z, point.doppler);
                     }
                 }
-                StandardTlv::ExtendedPointCloud(cloud) => {
-                    println!("{} extended points", cloud.points.len());
-                }
+                _ => {}
             }
         }
     }
@@ -136,6 +134,25 @@ Use the traits directly when the TLV type is known:
 
 ```rust,ignore
 let temperature = TemperatureTlv::from_packet(packet)?;
+```
+
+An untagged `Tlv` struct can collect a frame directly. Use `Option<T>` for one
+TLV and `Vec<T>` for repeated TLVs:
+
+```rust
+use titlv::prelude::*;
+
+#[derive(Tlv)]
+#[tlv(type = 42)]
+struct TemperatureTlv {
+    value: f32,
+}
+
+#[derive(Tlv)]
+struct Payload {
+    point_cloud: Option<PointCloud>,
+    temperatures: Vec<TemperatureTlv>,
+}
 ```
 
 ## Errors

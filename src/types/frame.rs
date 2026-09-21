@@ -6,21 +6,37 @@ use crate::{
 };
 
 /// A decoded TI radar frame.
-///
-/// `payload` contains the TLVs that decoded successfully as `T`.
 pub struct Frame<T> {
     pub header: FrameHeader,
-    pub payload: Vec<T>,
+    pub payload: T,
+}
+
+/// Collects decoded TLVs into a frame payload.
+pub trait FramePayload: Sized {
+    fn with_capacity(capacity: usize) -> Self;
+    fn push(&mut self, packet: TlvPacket<'_>);
+}
+
+impl<T: Tlv> FramePayload for Vec<T> {
+    fn with_capacity(capacity: usize) -> Self {
+        Vec::with_capacity(capacity)
+    }
+
+    fn push(&mut self, packet: TlvPacket<'_>) {
+        if let Ok(tlv) = T::from_packet(packet) {
+            self.push(tlv);
+        }
+    }
 }
 
 impl<T> TlvReader for Frame<T>
 where
-    T: Tlv,
+    T: FramePayload,
 {
     fn read<R: BufRead>(buf: &mut R) -> error::Result<Self> {
         let header = FrameHeader::read(buf)?;
 
-        let mut payload = Vec::with_capacity(header.num_tlvs as usize);
+        let mut payload = T::with_capacity(header.num_tlvs as usize);
 
         for _ in 0..header.num_tlvs {
             let tlv_header = TlvHeader::read(buf)?;
@@ -34,9 +50,7 @@ where
                 payload: &payload_buf,
             };
 
-            if let Ok(tlv) = T::from_packet(packet) {
-                payload.push(tlv);
-            }
+            payload.push(packet);
         }
 
         Ok(Frame { header, payload })
