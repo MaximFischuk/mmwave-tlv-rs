@@ -28,6 +28,19 @@ pub enum StandardTlv {
     TemperatureStats(TemperatureStats),
 }
 
+#[derive(crate::Tlv)]
+pub enum PeopleTracking3dTlv {
+    #[tlv(type = 1010)]
+    TrackList(TrackList),
+    #[tlv(type = 1011)]
+    TargetIndexes(TargetIndexes),
+    #[tlv(type = 1012)]
+    TrackHeights(TrackHeights),
+
+    #[tlv(type = 1)]
+    PointCloud(PointCloud),
+}
+
 // TLV type ID: 316
 pub struct AdcSamples {
     pub samples: Vec<AdcSample>,
@@ -169,10 +182,13 @@ pub struct CompressedSphericalPoint {
 }
 
 // TLV type IDs: 1010, 308
+#[derive(crate::Tlv)]
+#[tlv(type = 1010)]
 pub struct TrackList {
     pub tracks: Vec<Track>,
 }
 
+#[derive(crate::TlvReader)]
 pub struct Track {
     pub id: u32,
     pub position: [f32; 3],
@@ -199,10 +215,13 @@ pub struct Track2d {
 }
 
 // TLV type ID: 1012
+#[derive(crate::Tlv)]
+#[tlv(type = 1012)]
 pub struct TrackHeights {
     pub heights: Vec<TrackHeight>,
 }
 
+#[derive(crate::TlvReader)]
 pub struct TrackHeight {
     pub id: u32,
     pub max_z: f32,
@@ -218,10 +237,13 @@ pub struct CameraTriggers {
 }
 
 // TLV type IDs: 1011, 309
+#[derive(crate::Tlv)]
+#[tlv(type = 1011)]
 pub struct TargetIndexes {
     pub indexes: Vec<TargetIndex>,
 }
 
+#[derive(crate::TlvReader)]
 pub struct TargetIndex {
     pub value: u8,
 }
