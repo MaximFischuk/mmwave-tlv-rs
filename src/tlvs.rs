@@ -38,10 +38,11 @@ pub enum PeopleTracking3dTlv {
 }
 
 // TLV type ID: 316
-pub struct AdcSamples {
-    pub samples: Vec<AdcSample>,
-}
+#[derive(crate::Tlv)]
+#[tlv(type = 316)]
+pub struct AdcSamples(pub Vec<AdcSample>);
 
+#[derive(crate::TlvReader)]
 pub struct AdcSample {
     pub value: i16,
 }
@@ -74,10 +75,11 @@ pub struct ExtendedPoint {
 }
 
 // TLV type ID: 315
-pub struct EnhancedPresence {
-    pub zones: Vec<PresenceZone>,
-}
+#[derive(crate::Tlv)]
+#[tlv(type = 315)]
+pub struct EnhancedPresence(pub Vec<PresenceZone>);
 
+#[derive(crate::TlvReader)]
 pub struct PresenceZone {
     pub state: u8,
 }
@@ -120,34 +122,38 @@ pub struct NoiseBin {
 }
 
 // TLV type ID: 304
-pub struct RangeAzimuthMajorHeatmap {
-    pub cells: Vec<HeatmapCell>,
-}
+#[derive(crate::Tlv)]
+#[tlv(type = 304)]
+pub struct RangeAzimuthMajorHeatmap(pub Vec<HeatmapCell>);
 
 // TLV type ID: 305
-pub struct RangeAzimuthMinorHeatmap {
-    pub cells: Vec<HeatmapCell>,
-}
+#[derive(crate::Tlv)]
+#[tlv(type = 305)]
+pub struct RangeAzimuthMinorHeatmap(pub Vec<HeatmapCell>);
 
 // TLV type ID: 5
-pub struct RangeDopplerHeatmap {
-    pub cells: Vec<HeatmapCell>,
-}
+#[derive(crate::Tlv)]
+#[tlv(type = 5)]
+pub struct RangeDopplerHeatmap(pub Vec<HeatmapCell>);
 
+#[derive(crate::TlvReader)]
 pub struct HeatmapCell {
     pub value: u32,
 }
 
 // TLV type ID: 1030
+#[derive(crate::Tlv)]
+#[tlv(type = 1030)]
 pub struct OccupancyStateMachine {
     pub occupied: [bool; 32],
 }
 
 // TLV type ID: 1000
-pub struct SphericalPointCloud {
-    pub points: Vec<SphericalPoint>,
-}
+#[derive(crate::Tlv)]
+#[tlv(type = 1000)]
+pub struct SphericalPointCloud(pub Vec<SphericalPoint>);
 
+#[derive(crate::TlvReader)]
 pub struct SphericalPoint {
     pub range: f32,
     pub azimuth: f32,
@@ -198,10 +204,11 @@ pub struct Track {
 }
 
 // TLV type ID: 1035
-pub struct TrackList2d {
-    pub tracks: Vec<Track2d>,
-}
+#[derive(crate::Tlv)]
+#[tlv(type = 1035)]
+pub struct TrackList2d(pub Vec<Track2d>);
 
+#[derive(crate::TlvReader)]
 pub struct Track2d {
     pub id: u32,
     pub position: [f32; 2],
@@ -227,6 +234,8 @@ pub struct TrackHeight {
 }
 
 // TLV type ID: 3000
+#[derive(crate::Tlv)]
+#[tlv(type = 3000)]
 pub struct CameraTriggers {
     pub active_tracks: u32,
     pub trigger: u32,
@@ -247,6 +256,8 @@ pub struct TargetIndex {
 }
 
 // TLV type ID: 1040
+#[derive(crate::Tlv)]
+#[tlv(type = 1040)]
 pub struct VitalSigns {
     pub id: u16,
     pub range_bin: u16,
@@ -258,15 +269,18 @@ pub struct VitalSigns {
 }
 
 // TLV type ID: 317
-pub struct ClassifierOutput {
-    pub probabilities: Vec<ClassifierProbability>,
-}
+#[derive(crate::Tlv)]
+#[tlv(type = 317)]
+pub struct ClassifierOutput(pub Vec<ClassifierProbability>);
 
+#[derive(crate::TlvReader)]
 pub struct ClassifierProbability {
     pub value: u8,
 }
 
 // TLV type ID: 1031
+#[derive(crate::Tlv)]
+#[tlv(type = 1031)]
 pub struct PointCloudClassification {
     pub class_type: u32,
     pub class_count: u32,
@@ -274,6 +288,8 @@ pub struct PointCloudClassification {
 }
 
 // TLV type ID: 1050
+#[derive(crate::Tlv)]
+#[tlv(type = 1050)]
 pub struct GestureFeatures6843 {
     pub weighted_doppler: f32,
     pub weighted_positive_doppler: f32,
@@ -288,62 +304,84 @@ pub struct GestureFeatures6843 {
 }
 
 // TLV type ID: 1051
+#[derive(crate::Tlv)]
+#[tlv(type = 1051)]
 pub struct GestureProbabilities6843 {
     pub probabilities: [f32; 10],
 }
 
 // TLV type ID: 350
+#[derive(crate::Tlv)]
+#[tlv(type = 350)]
 pub struct GestureFeatures6432 {
     pub values: [f32; 16],
 }
 
 // TLV type ID: 351
+#[derive(crate::Tlv)]
+#[tlv(type = 351)]
 pub struct GestureClassifier6432 {
     pub gesture: i8,
 }
 
 // TLV type ID: 352
+#[derive(crate::Tlv)]
+#[tlv(type = 352)]
 pub struct GesturePresence6432 {
     pub state: i8,
 }
 
 // TLV type ID: 353
+#[derive(crate::Tlv)]
+#[tlv(type = 353)]
 pub struct PresenceThreshold {
     pub value: u32,
 }
 
 // TLV type ID: 1060
+#[derive(crate::Tlv)]
+#[tlv(type = 1060)]
 pub struct ModeSwitchInfo {
     pub state: i8,
 }
 
 // TLV type ID: 1061
+#[derive(crate::Tlv)]
+#[tlv(type = 1061)]
 pub struct CameraOn {
     pub state: i8,
 }
 
 // TLV type ID: 10312
+#[derive(crate::Tlv)]
+#[tlv(type = 10312)]
 pub struct SurfaceClassification {
     pub value: f32,
 }
 
 // TLV type ID: 1033
+#[derive(crate::Tlv)]
+#[tlv(type = 1033)]
 pub struct Velocity {
     pub value: f32,
     pub valid: bool,
 }
 
 // TLV type ID: 362
-pub struct GestureMinorMotionPointCloud {
-    pub points: Vec<Point>,
-}
+#[derive(crate::Tlv)]
+#[tlv(type = 362)]
+pub struct GestureMinorMotionPointCloud(pub Vec<Point>);
 
 // TLV type ID: 318
+#[derive(crate::Tlv)]
+#[tlv(type = 318)]
 pub struct RxChannelCompensation {
     pub coefficients: [f32; 13],
 }
 
 // TLV type ID: 306
+#[derive(crate::Tlv)]
+#[tlv(type = 306)]
 pub struct ExtendedStats {
     pub inter_frame_processing_time: u32,
     pub transmit_output_time: u32,
@@ -358,6 +396,8 @@ pub struct ExtendedStats {
 }
 
 // TLV type ID: 1034
+#[derive(crate::Tlv)]
+#[tlv(type = 1034)]
 pub struct ExtendedStatsBsd {
     pub inter_frame_processing_time: u32,
     pub transmit_output_time: u32,
@@ -374,25 +414,30 @@ pub struct ExtendedStatsBsd {
 }
 
 // TLV type ID: 1062
-pub struct ClusterLocations {
-    pub locations: Vec<ClusterLocation>,
-}
+#[derive(crate::Tlv)]
+#[tlv(type = 1062)]
+pub struct ClusterLocations(pub Vec<ClusterLocation>);
 
+#[derive(crate::TlvReader)]
 pub struct ClusterLocation {
     pub x: f32,
     pub y: f32,
 }
 
 // TLV type ID: 12
+#[derive(crate::Tlv)]
+#[tlv(type = 12)]
 pub struct IntrusionDetectionInfo {
     pub signals: Vec<OccupancyBoxSignal>,
     pub decisions: Vec<OccupancyBoxDecision>,
 }
 
+#[derive(crate::TlvReader)]
 pub struct OccupancyBoxSignal {
     pub value: f32,
 }
 
+#[derive(crate::TlvReader)]
 pub struct OccupancyBoxDecision {
     pub value: u8,
 }
@@ -425,37 +470,41 @@ pub struct TemperatureSensor {
 }
 
 // TLV type ID: 3002
-pub struct OccupancyFeatures {
-    pub values: Vec<OccupancyFeature>,
-}
+#[derive(crate::Tlv)]
+#[tlv(type = 3002)]
+pub struct OccupancyFeatures(pub Vec<OccupancyFeature>);
 
+#[derive(crate::TlvReader)]
 pub struct OccupancyFeature {
     pub value: f32,
 }
 
 // TLV type ID: 1041
-pub struct OccupancyClassificationResults {
-    pub values: Vec<OccupancyClassificationResult>,
-}
+#[derive(crate::Tlv)]
+#[tlv(type = 1041)]
+pub struct OccupancyClassificationResults(pub Vec<OccupancyClassificationResult>);
 
+#[derive(crate::TlvReader)]
 pub struct OccupancyClassificationResult {
     pub value: u8,
 }
 
 // TLV type ID: 1042
-pub struct OccupancyHeightResults {
-    pub values: Vec<OccupancyHeightResult>,
-}
+#[derive(crate::Tlv)]
+#[tlv(type = 1042)]
+pub struct OccupancyHeightResults(pub Vec<OccupancyHeightResult>);
 
+#[derive(crate::TlvReader)]
 pub struct OccupancyHeightResult {
     pub value: f32,
 }
 
 // TLV type ID: 1070
-pub struct LevelSensing {
-    pub points: Vec<LevelSensingPoint>,
-}
+#[derive(crate::Tlv)]
+#[tlv(type = 1070)]
+pub struct LevelSensing(pub Vec<LevelSensingPoint>);
 
+#[derive(crate::TlvReader)]
 pub struct LevelSensingPoint {
     pub y: f32,
     pub snr: f32,
@@ -463,6 +512,8 @@ pub struct LevelSensingPoint {
 }
 
 // TLV type ID: 1080
+#[derive(crate::Tlv)]
+#[tlv(type = 1080)]
 pub struct SleepMonitoring {
     pub energy_average: u32,
     pub range: f32,
@@ -476,15 +527,18 @@ pub struct SleepMonitoring {
 }
 
 // TLV type ID: 2008
-pub struct MacroDopplerFft {
-    pub values: Vec<MacroDopplerValue>,
-}
+#[derive(crate::Tlv)]
+#[tlv(type = 2008)]
+pub struct MacroDopplerFft(pub Vec<MacroDopplerValue>);
 
+#[derive(crate::TlvReader)]
 pub struct MacroDopplerValue {
     pub value: f32,
 }
 
 // TLV type ID: 368
+#[derive(crate::Tlv)]
+#[tlv(type = 368)]
 pub struct DpcPoint {
     pub x: f32,
     pub y: f32,
@@ -498,12 +552,16 @@ pub struct DpcPoint {
 }
 
 // TLV type ID: 3001
+#[derive(crate::Tlv)]
+#[tlv(type = 3001)]
 pub struct MinorPointCloud {
     pub units: CompressedPointUnits,
     pub points: Vec<CompressedSphericalPoint>,
 }
 
 // TLV type ID: 410
+#[derive(crate::Tlv)]
+#[tlv(type = 410)]
 pub struct ModelFlag {
     pub value: u8,
 }

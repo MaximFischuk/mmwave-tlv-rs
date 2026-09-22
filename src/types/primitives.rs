@@ -19,6 +19,22 @@ impl<T: TlvReader> TlvReader for Vec<T> {
     }
 }
 
+impl TlvReader for bool {
+    fn read<R: BufRead>(buf: &mut R) -> error::Result<Self> {
+        Ok(u8::read(buf)? != 0)
+    }
+}
+
+impl<const N: usize> TlvReader for [bool; N] {
+    fn read<R: BufRead>(buf: &mut R) -> error::Result<Self> {
+        let mut array = [false; N];
+        for item in &mut array {
+            *item = bool::read(buf)?;
+        }
+        Ok(array)
+    }
+}
+
 macro_rules! impl_tlv_for_primitive {
     ($($primitive:ty),+ $(,)?) => {
         $(
