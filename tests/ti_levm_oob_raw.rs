@@ -36,7 +36,7 @@ fn print_frame(frame: &Frame<Vec<StandardTlv>>) {
             }
             StandardTlv::PointCloudSideInfo(side_info) => {
                 println!("  PointCloudSideInfo {{ points: [");
-                for point in &side_info.points {
+                for point in side_info.iter() {
                     println!(
                         "    PointSideInfo {{ snr: {}, noise: {} }},",
                         point.snr, point.noise,
@@ -46,15 +46,15 @@ fn print_frame(frame: &Frame<Vec<StandardTlv>>) {
             }
             StandardTlv::RangeProfile(range_profile) => {
                 println!("  RangeProfile {{ bins: [");
-                for bin in &range_profile.bins {
-                    println!("    RangeBin {{ value: {} }},", bin.value);
+                for bin in range_profile.iter() {
+                    println!("    RangeBin {{ value: {} }},", bin.as_ref());
                 }
                 println!("  ] }}");
             }
             StandardTlv::NoiseProfile(noise_profile) => {
                 println!("  NoiseProfile {{ bins: [");
-                for bin in &noise_profile.bins {
-                    println!("    NoiseBin {{ value: {} }},", bin.value);
+                for bin in noise_profile.iter() {
+                    println!("    NoiseBin {{ value: {} }},", bin.as_ref());
                 }
                 println!("  ] }}");
             }
@@ -75,8 +75,8 @@ fn print_frame(frame: &Frame<Vec<StandardTlv>>) {
                     "  TemperatureStats {{ temp_report_valid: {}, time: {}, sensors: [",
                     temperature_stats.temp_report_valid, temperature_stats.time,
                 );
-                for sensor in &temperature_stats.sensors {
-                    println!("    TemperatureSensor {{ value: {} }},", sensor.value);
+                for sensor in temperature_stats.sensors.iter() {
+                    println!("    TemperatureSensor {{ value: {} }},", sensor.as_ref());
                 }
                 println!("  ] }}");
             }

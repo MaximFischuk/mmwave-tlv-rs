@@ -1,4 +1,6 @@
-#[derive(crate::Tlv)]
+use derive_more::*;
+
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 1)]
 pub struct PointCloud(pub Vec<Point>);
 
@@ -38,7 +40,7 @@ pub enum PeopleTracking3dTlv {
 }
 
 // TLV type ID: 316
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 316)]
 pub struct AdcSamples(pub Vec<AdcSample>);
 
@@ -75,7 +77,7 @@ pub struct ExtendedPoint {
 }
 
 // TLV type ID: 315
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 315)]
 pub struct EnhancedPresence(pub Vec<PresenceZone>);
 
@@ -85,11 +87,9 @@ pub struct PresenceZone {
 }
 
 // TLV type ID: 7
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 7)]
-pub struct PointCloudSideInfo {
-    pub points: Vec<PointSideInfo>,
-}
+pub struct PointCloudSideInfo(pub Vec<PointSideInfo>);
 
 #[derive(crate::TlvReader)]
 pub struct PointSideInfo {
@@ -98,48 +98,38 @@ pub struct PointSideInfo {
 }
 
 // TLV type IDs: 2, 302, 303
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 2)]
-pub struct RangeProfile {
-    pub bins: Vec<RangeBin>,
-}
+pub struct RangeProfile(pub Vec<RangeBin>);
 
-#[derive(crate::TlvReader)]
-pub struct RangeBin {
-    pub value: u32,
-}
+#[derive(crate::TlvReader, AsRef, AsMut, Deref, DerefMut)]
+pub struct RangeBin(pub u32);
 
 // TLV type ID: 3
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 3)]
-pub struct NoiseProfile {
-    pub bins: Vec<NoiseBin>,
-}
+pub struct NoiseProfile(pub Vec<NoiseBin>);
 
-#[derive(crate::TlvReader)]
-pub struct NoiseBin {
-    pub value: u32,
-}
+#[derive(crate::TlvReader, AsRef, AsMut, Deref, DerefMut)]
+pub struct NoiseBin(pub u32);
 
 // TLV type ID: 304
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 304)]
 pub struct RangeAzimuthMajorHeatmap(pub Vec<HeatmapCell>);
 
 // TLV type ID: 305
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 305)]
 pub struct RangeAzimuthMinorHeatmap(pub Vec<HeatmapCell>);
 
 // TLV type ID: 5
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 5)]
 pub struct RangeDopplerHeatmap(pub Vec<HeatmapCell>);
 
-#[derive(crate::TlvReader)]
-pub struct HeatmapCell {
-    pub value: u32,
-}
+#[derive(crate::TlvReader, AsRef, AsMut, Deref, DerefMut)]
+pub struct HeatmapCell(pub u32);
 
 // TLV type ID: 1030
 #[derive(crate::Tlv)]
@@ -149,7 +139,7 @@ pub struct OccupancyStateMachine {
 }
 
 // TLV type ID: 1000
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 1000)]
 pub struct SphericalPointCloud(pub Vec<SphericalPoint>);
 
@@ -188,7 +178,7 @@ pub struct CompressedSphericalPoint {
 }
 
 // TLV type IDs: 1010, 308
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 1010)]
 pub struct TrackList(pub Vec<Track>);
 
@@ -204,7 +194,7 @@ pub struct Track {
 }
 
 // TLV type ID: 1035
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 1035)]
 pub struct TrackList2d(pub Vec<Track2d>);
 
@@ -220,11 +210,9 @@ pub struct Track2d {
 }
 
 // TLV type ID: 1012
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 1012)]
-pub struct TrackHeights {
-    pub heights: Vec<TrackHeight>,
-}
+pub struct TrackHeights(pub Vec<TrackHeight>);
 
 #[derive(crate::TlvReader)]
 pub struct TrackHeight {
@@ -244,16 +232,12 @@ pub struct CameraTriggers {
 }
 
 // TLV type IDs: 1011, 309
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 1011)]
-pub struct TargetIndexes {
-    pub indexes: Vec<TargetIndex>,
-}
+pub struct TargetIndexes(pub Vec<TargetIndex>);
 
-#[derive(crate::TlvReader)]
-pub struct TargetIndex {
-    pub value: u8,
-}
+#[derive(crate::TlvReader, AsRef, AsMut, Deref, DerefMut)]
+pub struct TargetIndex(pub u8);
 
 // TLV type ID: 1040
 #[derive(crate::Tlv)]
@@ -269,14 +253,12 @@ pub struct VitalSigns {
 }
 
 // TLV type ID: 317
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 317)]
 pub struct ClassifierOutput(pub Vec<ClassifierProbability>);
 
-#[derive(crate::TlvReader)]
-pub struct ClassifierProbability {
-    pub value: u8,
-}
+#[derive(crate::TlvReader, AsRef, AsMut, Deref, DerefMut)]
+pub struct ClassifierProbability(pub u8);
 
 // TLV type ID: 1031
 #[derive(crate::Tlv)]
@@ -332,11 +314,9 @@ pub struct GesturePresence6432 {
 }
 
 // TLV type ID: 353
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 353)]
-pub struct PresenceThreshold {
-    pub value: u32,
-}
+pub struct PresenceThreshold(pub u32);
 
 // TLV type ID: 1060
 #[derive(crate::Tlv)]
@@ -353,11 +333,9 @@ pub struct CameraOn {
 }
 
 // TLV type ID: 10312
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 10312)]
-pub struct SurfaceClassification {
-    pub value: f32,
-}
+pub struct SurfaceClassification(pub f32);
 
 // TLV type ID: 1033
 #[derive(crate::Tlv)]
@@ -368,7 +346,7 @@ pub struct Velocity {
 }
 
 // TLV type ID: 362
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 362)]
 pub struct GestureMinorMotionPointCloud(pub Vec<Point>);
 
@@ -414,7 +392,7 @@ pub struct ExtendedStatsBsd {
 }
 
 // TLV type ID: 1062
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 1062)]
 pub struct ClusterLocations(pub Vec<ClusterLocation>);
 
@@ -432,15 +410,11 @@ pub struct IntrusionDetectionInfo {
     pub decisions: Vec<OccupancyBoxDecision>,
 }
 
-#[derive(crate::TlvReader)]
-pub struct OccupancyBoxSignal {
-    pub value: f32,
-}
+#[derive(crate::TlvReader, AsRef, AsMut, Deref, DerefMut)]
+pub struct OccupancyBoxSignal(pub f32);
 
-#[derive(crate::TlvReader)]
-pub struct OccupancyBoxDecision {
-    pub value: u8,
-}
+#[derive(crate::TlvReader, AsRef, AsMut, Deref, DerefMut)]
+pub struct OccupancyBoxDecision(pub u8);
 
 // TLV type ID: 6
 #[derive(crate::Tlv)]
@@ -464,43 +438,35 @@ pub struct TemperatureStats {
     pub sensors: Vec<TemperatureSensor>,
 }
 
-#[derive(crate::TlvReader)]
-pub struct TemperatureSensor {
-    pub value: i16,
-}
+#[derive(crate::TlvReader, AsRef, AsMut, Deref, DerefMut)]
+pub struct TemperatureSensor(pub i16);
 
 // TLV type ID: 3002
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 3002)]
 pub struct OccupancyFeatures(pub Vec<OccupancyFeature>);
 
-#[derive(crate::TlvReader)]
-pub struct OccupancyFeature {
-    pub value: f32,
-}
+#[derive(crate::TlvReader, AsRef, AsMut, Deref, DerefMut)]
+pub struct OccupancyFeature(pub f32);
 
 // TLV type ID: 1041
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 1041)]
 pub struct OccupancyClassificationResults(pub Vec<OccupancyClassificationResult>);
 
-#[derive(crate::TlvReader)]
-pub struct OccupancyClassificationResult {
-    pub value: u8,
-}
+#[derive(crate::TlvReader, AsRef, AsMut, Deref, DerefMut)]
+pub struct OccupancyClassificationResult(pub u8);
 
 // TLV type ID: 1042
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 1042)]
 pub struct OccupancyHeightResults(pub Vec<OccupancyHeightResult>);
 
-#[derive(crate::TlvReader)]
-pub struct OccupancyHeightResult {
-    pub value: f32,
-}
+#[derive(crate::TlvReader, AsRef, AsMut, Deref, DerefMut)]
+pub struct OccupancyHeightResult(pub f32);
 
 // TLV type ID: 1070
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 1070)]
 pub struct LevelSensing(pub Vec<LevelSensingPoint>);
 
@@ -527,14 +493,12 @@ pub struct SleepMonitoring {
 }
 
 // TLV type ID: 2008
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 2008)]
 pub struct MacroDopplerFft(pub Vec<MacroDopplerValue>);
 
-#[derive(crate::TlvReader)]
-pub struct MacroDopplerValue {
-    pub value: f32,
-}
+#[derive(crate::TlvReader, AsRef, AsMut, Deref, DerefMut)]
+pub struct MacroDopplerValue(pub f32);
 
 // TLV type ID: 368
 #[derive(crate::Tlv)]
@@ -560,11 +524,9 @@ pub struct MinorPointCloud {
 }
 
 // TLV type ID: 410
-#[derive(crate::Tlv)]
+#[derive(crate::Tlv, AsRef, AsMut, Deref, DerefMut)]
 #[tlv(type = 410)]
-pub struct ModelFlag {
-    pub value: u8,
-}
+pub struct ModelFlag(pub u8);
 
 #[cfg(test)]
 mod tests {
@@ -643,8 +605,8 @@ mod tests {
 
         assert_eq!(frame.payload.tracks.0.len(), 1);
         assert_eq!(frame.payload.target_indexes.len(), 2);
-        assert_eq!(frame.payload.target_indexes[0].indexes[1].value, 2);
-        assert_eq!(frame.payload.target_indexes[1].indexes[0].value, 3);
+        assert_eq!(frame.payload.target_indexes[0].as_ref()[1].0, 2);
+        assert_eq!(frame.payload.target_indexes[1].as_ref()[0].0, 3);
         assert!(frame.payload.point_cloud.is_some());
     }
 
