@@ -647,11 +647,14 @@ mod tests {
         bytes.extend_from_slice(&1010_u32.to_le_bytes());
         bytes.extend_from_slice(&(track.len() as u32).to_le_bytes());
         bytes.extend_from_slice(&track);
-        for indexes in [&[1_u8, 2][..], &[3_u8][..]] {
-            bytes.extend_from_slice(&1011_u32.to_le_bytes());
-            bytes.extend_from_slice(&(indexes.len() as u32).to_le_bytes());
-            bytes.extend_from_slice(indexes);
-        }
+        let target_indexes = [2_u8, 3];
+        bytes.extend_from_slice(&1011_u32.to_le_bytes());
+        bytes.extend_from_slice(&(target_indexes.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(&target_indexes);
+        let track_height = [0_u8; 12];
+        bytes.extend_from_slice(&1012_u32.to_le_bytes());
+        bytes.extend_from_slice(&(track_height.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(&track_height);
         let compressed_point_cloud = [0_u8; 20];
         bytes.extend_from_slice(&1020_u32.to_le_bytes());
         bytes.extend_from_slice(&(compressed_point_cloud.len() as u32).to_le_bytes());
