@@ -21,6 +21,16 @@ pub struct PeopleTracking3dTlv {
 }
 
 #[derive(crate::Tlv, Debug)]
+pub struct StandardTlvOOB {
+    pub points: PointCloud,
+    pub side_info: PointCloudSideInfo,
+    pub range_profile: RangeProfile,
+    pub noise_profile: NoiseProfile,
+    pub stats: Stats,
+    pub temperature_stats: TemperatureStats,
+}
+
+#[derive(crate::Tlv, Debug)]
 pub enum StandardTlv {
     PointCloud(PointCloud),
     PointCloudSideInfo(PointCloudSideInfo),
