@@ -1,6 +1,6 @@
 [package]
-name = "titlv"
-description = "A Rust library for decoding TLV (Type-Length-Value) packets of Texas Instruments' sensors such as mmWave radars (IWR6843, IWR1443, etc.)."
+name = "mmwave-tlv"
+description = "A Rust library for decoding TLV (Type-Length-Value) packets of Texas Instruments' mmWave radars (IWR6843, IWR1443, etc.)."
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
@@ -15,7 +15,7 @@ thiserror = "2"
 bytes = "1"
 
 derive_more = { version = "2", features = ["as_ref", "deref", "deref_mut"] }
-titlv-derive = { path = "titlv-derive" }
+mmwave-tlv-derive = { path = "mmwave-tlv-derive" }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt", "fs"] }

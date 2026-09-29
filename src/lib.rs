@@ -10,7 +10,7 @@
 //! ```no_run
 //! use std::{fs::File, io::BufReader};
 //!
-//! use titlv::prelude::*;
+//! use mmwave_tlv::prelude::*;
 //!
 //! fn main() -> Result<()> {
 //!     let file = File::open("radar.bin")?;
@@ -29,7 +29,7 @@
 //! Use the prelude to derive decoders for TLVs emitted by your radar firmware.
 //!
 //! ```no_run
-//! use titlv::prelude::*;
+//! use mmwave_tlv::prelude::*;
 //!
 //! #[derive(TlvReader)]
 //! struct Temperature {
@@ -43,7 +43,7 @@
 //! }
 //! ```
 
-extern crate self as titlv;
+extern crate self as mmwave_tlv;
 
 pub mod error;
 pub mod reader;
@@ -52,7 +52,7 @@ pub mod types;
 
 pub mod prelude;
 
-pub use titlv_derive::{Tlv, TlvReader};
+pub use mmwave_tlv_derive::{Tlv, TlvReader};
 
 use std::io::BufRead;
 

@@ -1,5 +1,5 @@
 [package]
-name = "titlv-derive"
+name = "mmwave-tlv-derive"
 version = "0.1.0"
 edition = "2024"
 

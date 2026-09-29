@@ -1,18 +1,17 @@
-use tokio::{fs::File, io::BufReader};
+use std::{fs::File, io::BufReader};
 
-use titlv::{reader::AsyncFrameStreamReader, tlvs::StandardTlv, types::Frame};
+use mmwave_tlv::{reader::FrameStreamReader, tlvs::StandardTlv, types::Frame};
 
-#[tokio::test]
-async fn decodes_and_prints_ti_levm_oob_raw_frames_async() {
+#[test]
+fn decodes_and_prints_levm_oob_raw_frames() {
     let file = File::open(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/data/ti_levm_oob_raw.bin"
+        "/data/levm_oob_raw.bin"
     ))
-    .await
     .expect("raw TLV capture should be present");
-    let mut reader = AsyncFrameStreamReader::new(BufReader::new(file));
+    let mut reader = FrameStreamReader::new(BufReader::new(file));
 
-    while let Ok(Some(frame)) = reader.read_frame::<Vec<StandardTlv>>().await {
+    while let Ok(Some(frame)) = reader.read_frame::<Vec<StandardTlv>>() {
         print_frame(&frame);
     }
 }
@@ -76,7 +75,7 @@ fn print_frame(frame: &Frame<Vec<StandardTlv>>) {
                     "  TemperatureStats {{ temp_report_valid: {}, time: {}, sensors: [",
                     temperature_stats.temp_report_valid, temperature_stats.time,
                 );
-                for sensor in &temperature_stats.sensors {
+                for sensor in temperature_stats.sensors.iter() {
                     println!("    TemperatureSensor {{ value: {} }},", sensor.as_ref());
                 }
                 println!("  ] }}");

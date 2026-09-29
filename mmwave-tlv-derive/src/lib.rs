@@ -19,7 +19,7 @@ pub fn derive_tlv(input: TokenStream) -> TokenStream {
         .into()
 }
 
-/// Derives `titlv::TlvReader` for a struct with consecutively encoded fields.
+/// Derives `mmwave_tlv::TlvReader` for a struct with consecutively encoded fields.
 #[proc_macro_derive(TlvReader)]
 pub fn derive_tlv_reader(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -38,15 +38,15 @@ fn derive_tlv_impl(input: DeriveInput) -> Result<proc_macro2::TokenStream> {
                 Ok(quote! {
                     #reader
 
-                    impl ::titlv::Tlv for #name {
-                        const TYPE: ::titlv::types::Tag = ::titlv::types::Tag::const_new::<#type_id>();
+                    impl ::mmwave_tlv::Tlv for #name {
+                        const TYPE: ::mmwave_tlv::types::Tag = ::mmwave_tlv::types::Tag::const_new::<#type_id>();
 
-                        fn from_packet(packet: ::titlv::types::TlvPacket<'_>) -> ::titlv::error::Result<Self> {
+                        fn from_packet(packet: ::mmwave_tlv::types::TlvPacket<'_>) -> ::mmwave_tlv::error::Result<Self> {
                             if packet.header.r#type != Self::TYPE {
-                                return Err(::titlv::error::Error::UnexpectedTlvType);
+                                return Err(::mmwave_tlv::error::Error::UnexpectedTlvType);
                             }
 
-                            <Self as ::titlv::TlvReader>::read(&mut &packet.payload[..])
+                            <Self as ::mmwave_tlv::TlvReader>::read(&mut &packet.payload[..])
                         }
                     }
                 })
@@ -76,21 +76,21 @@ fn derive_tlv_impl(input: DeriveInput) -> Result<proc_macro2::TokenStream> {
                     let variant_type = &fields.unnamed[0].ty;
 
                     Ok(quote! {
-                        tag if tag == <#variant_type as ::titlv::Tlv>::TYPE => Ok(Self::#variant_name(
-                            <#variant_type as ::titlv::Tlv>::from_packet(packet)?,
+                        tag if tag == <#variant_type as ::mmwave_tlv::Tlv>::TYPE => Ok(Self::#variant_name(
+                            <#variant_type as ::mmwave_tlv::Tlv>::from_packet(packet)?,
                         )),
                     })
                 })
                 .collect::<Result<Vec<_>>>()?;
 
             Ok(quote! {
-                impl ::titlv::Tlv for #name {
-                    const TYPE: ::titlv::types::Tag = ::titlv::types::Tag::UNKNOWN;
+                impl ::mmwave_tlv::Tlv for #name {
+                    const TYPE: ::mmwave_tlv::types::Tag = ::mmwave_tlv::types::Tag::UNKNOWN;
 
-                    fn from_packet(packet: ::titlv::types::TlvPacket<'_>) -> ::titlv::error::Result<Self> {
+                    fn from_packet(packet: ::mmwave_tlv::types::TlvPacket<'_>) -> ::mmwave_tlv::error::Result<Self> {
                         match packet.header.r#type {
                             #(#variants)*
-                            _ => Err(::titlv::error::Error::UnexpectedTlvType),
+                            _ => Err(::mmwave_tlv::error::Error::UnexpectedTlvType),
                         }
                     }
                 }
@@ -131,8 +131,8 @@ fn derive_frame_payload_impl(input: &DeriveInput) -> Result<proc_macro2::TokenSt
                 initializers.push(quote! { #field_name: None });
                 finishers.push(quote! { #field_name: self.#field_name });
                 matches.push(quote! {
-                    tag if tag == <#inner_type as ::titlv::Tlv>::TYPE => {
-                        if let Ok(value) = <#inner_type as ::titlv::Tlv>::from_packet(packet) {
+                    tag if tag == <#inner_type as ::mmwave_tlv::Tlv>::TYPE => {
+                        if let Ok(value) = <#inner_type as ::mmwave_tlv::Tlv>::from_packet(packet) {
                             self.#field_name = Some(value);
                         }
                     }
@@ -143,8 +143,8 @@ fn derive_frame_payload_impl(input: &DeriveInput) -> Result<proc_macro2::TokenSt
                 initializers.push(quote! { #field_name: ::std::vec::Vec::new() });
                 finishers.push(quote! { #field_name: self.#field_name });
                 matches.push(quote! {
-                    tag if tag == <#inner_type as ::titlv::Tlv>::TYPE => {
-                        if let Ok(value) = <#inner_type as ::titlv::Tlv>::from_packet(packet) {
+                    tag if tag == <#inner_type as ::mmwave_tlv::Tlv>::TYPE => {
+                        if let Ok(value) = <#inner_type as ::mmwave_tlv::Tlv>::from_packet(packet) {
                             self.#field_name.push(value);
                         }
                     }
@@ -154,11 +154,11 @@ fn derive_frame_payload_impl(input: &DeriveInput) -> Result<proc_macro2::TokenSt
                 builder_fields.push(quote! { #field_name: ::std::option::Option<#inner_type> });
                 initializers.push(quote! { #field_name: None });
                 finishers.push(quote! {
-                    #field_name: self.#field_name.ok_or(::titlv::error::Error::MissingRequiredTlv)?
+                    #field_name: self.#field_name.ok_or(::mmwave_tlv::error::Error::MissingRequiredTlv)?
                 });
                 matches.push(quote! {
-                    tag if tag == <#inner_type as ::titlv::Tlv>::TYPE => {
-                        if let Ok(value) = <#inner_type as ::titlv::Tlv>::from_packet(packet) {
+                    tag if tag == <#inner_type as ::mmwave_tlv::Tlv>::TYPE => {
+                        if let Ok(value) = <#inner_type as ::mmwave_tlv::Tlv>::from_packet(packet) {
                             self.#field_name = Some(value);
                         }
                     }
@@ -174,7 +174,7 @@ fn derive_frame_payload_impl(input: &DeriveInput) -> Result<proc_macro2::TokenSt
             #(#builder_fields),*
         }
 
-        impl ::titlv::types::FramePayload for #name {
+        impl ::mmwave_tlv::types::FramePayload for #name {
             type Builder = #builder_name;
 
             fn builder(_capacity: usize) -> Self::Builder {
@@ -182,17 +182,17 @@ fn derive_frame_payload_impl(input: &DeriveInput) -> Result<proc_macro2::TokenSt
             }
         }
 
-        impl ::titlv::types::FramePayloadBuilder for #builder_name {
+        impl ::mmwave_tlv::types::FramePayloadBuilder for #builder_name {
             type Payload = #name;
 
-            fn push(&mut self, packet: ::titlv::types::TlvPacket<'_>) {
+            fn push(&mut self, packet: ::mmwave_tlv::types::TlvPacket<'_>) {
                 match packet.header.r#type {
                     #(#matches,)*
                     _ => {}
                 }
             }
 
-            fn finish(self) -> ::titlv::error::Result<#name> {
+            fn finish(self) -> ::mmwave_tlv::error::Result<#name> {
                 Ok(#name { #(#finishers),* })
             }
         }
@@ -239,7 +239,7 @@ fn derive_reader_impl(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
             let reads = fields.named.iter().map(|field| {
                 let name = field.ident.as_ref().unwrap();
                 let ty = &field.ty;
-                quote! { let #name = <#ty as ::titlv::TlvReader>::read(buf)?; }
+                quote! { let #name = <#ty as ::mmwave_tlv::TlvReader>::read(buf)?; }
             });
             quote! {
                 #(#reads)*
@@ -252,7 +252,7 @@ fn derive_reader_impl(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
                 .collect::<Vec<_>>();
             let reads = fields.unnamed.iter().zip(&names).map(|(field, name)| {
                 let ty = &field.ty;
-                quote! { let #name = <#ty as ::titlv::TlvReader>::read(buf)?; }
+                quote! { let #name = <#ty as ::mmwave_tlv::TlvReader>::read(buf)?; }
             });
             quote! {
                 #(#reads)*
@@ -263,8 +263,8 @@ fn derive_reader_impl(input: &DeriveInput) -> Result<proc_macro2::TokenStream> {
     };
 
     Ok(quote! {
-        impl ::titlv::TlvReader for #name {
-            fn read<R: ::std::io::BufRead>(buf: &mut R) -> ::titlv::error::Result<Self> {
+        impl ::mmwave_tlv::TlvReader for #name {
+            fn read<R: ::std::io::BufRead>(buf: &mut R) -> ::mmwave_tlv::error::Result<Self> {
                 #body
             }
         }

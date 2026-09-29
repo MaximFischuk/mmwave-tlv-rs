@@ -1,15 +1,15 @@
-# titlv
+# mmWave TLV Decoder
 
-`titlv` decodes Type-Length-Value (TLV) frames emitted by Texas Instruments
+`mmwave-tlv` decodes Type-Length-Value (TLV) frames emitted by Texas Instruments
 mmWave radar sensors, including IWR6843 and IWR1443 devices.
 
 ## Add the dependency
 
-Add `titlv` to your `Cargo.toml`:
+Add `mmwave_tlv` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-titlv = "0.1.0"
+mmwave-tlv = "0.1.0"
 ```
 
 ## Read frames
@@ -21,7 +21,7 @@ word and returns `None` at end of stream.
 ```no_run
 use std::{fs::File, io::BufReader};
 
-use titlv::prelude::*;
+use mmwave_tlv::prelude::*;
 
 fn main() -> Result<()> {
     let file = File::open("radar.bin")?;
@@ -51,7 +51,7 @@ fn main() -> Result<()> {
 ```
 
 `FrameStreamReader` preserves its position between calls. Each returned frame
-has a [`FrameHeader`](https://docs.rs/titlv/latest/titlv/types/struct.FrameHeader.html)
+has a [`FrameHeader`](https://docs.rs/mmwave_tlv/latest/mmwave_tlv/types/struct.FrameHeader.html)
 and a payload containing decoded TLVs. Unsupported TLVs are skipped when using
 `StandardTlv`.
 
@@ -109,7 +109,7 @@ Derive `TlvReader` for a payload with fields in wire order. Derive `Tlv` and
 provide the TI TLV type ID to validate the packet header before decoding.
 
 ```rust
-use titlv::prelude::*;
+use mmwave_tlv::prelude::*;
 
 #[derive(TlvReader)]
 struct Temperature {
@@ -133,7 +133,7 @@ An untagged `Tlv` struct can collect a frame directly. Use `T` for a required
 TLV, `Option<T>` for an optional TLV, and `Vec<T>` for repeated TLVs:
 
 ```rust
-use titlv::prelude::*;
+use mmwave_tlv::prelude::*;
 
 #[derive(Tlv)]
 #[tlv(type = 42)]
@@ -159,4 +159,5 @@ and unexpected TLV type IDs are reported as `TlvError` values.
 ## Disclaimer
 
 This crate is provided "as is" without any warranties. The author is not responsible for any damage or data loss resulting from the use of this crate. Use it at your own risk.
+
 This crate is not affiliated with, endorsed by, or sponsored by Texas Instruments. 'TI', 'mmWave', and 'IWR6843' are trademarks of Texas Instruments.
