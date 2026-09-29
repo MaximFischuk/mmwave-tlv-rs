@@ -12,13 +12,6 @@ Add `titlv` to your `Cargo.toml`:
 titlv = "0.1.0"
 ```
 
-For a local checkout, use a path dependency instead:
-
-```toml
-[dependencies]
-titlv = { path = "../titlv-rs" }
-```
-
 ## Read frames
 
 Wrap the radar byte stream in a `BufReader`, construct a `FrameStreamReader`,
