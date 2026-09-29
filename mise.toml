@@ -17,4 +17,10 @@ run = [
 ]
 
 [tasks.publish]
-run = ["cargo publish"]
+usage = '''
+flag "--dry-run" help="Perform a dry run of the publish command without actually publishing."
+'''
+run = [
+  "cargo publish -p mmwave-tlv-derive {% if usage.dry_run %}--dry-run{% endif %}",
+  "cargo publish {% if usage.dry_run %}--dry-run{% endif %}",
+]

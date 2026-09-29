@@ -3,7 +3,14 @@ name = "mmwave-tlv"
 description = "A Rust library for decoding TLV (Type-Length-Value) packets of Texas Instruments' mmWave radars (IWR6843, IWR1443, etc.)."
 version = "0.1.0"
 edition = "2024"
+documentation = "https://docs.rs/mmwave-tlv"
+repository = "https://github.com/MaximFischuk/mmwave-tlv-rs"
+authors = ["Maxim Fischuk <dev@mfischuk.com>"]
+readme = "README.md"
 license = "MIT"
+
+[workspace]
+members = [".", "mmwave-tlv-derive"]
 
 [features]
 default = ["async"]
@@ -15,7 +22,7 @@ thiserror = "2"
 bytes = "1"
 
 derive_more = { version = "2", features = ["as_ref", "deref", "deref_mut"] }
-mmwave-tlv-derive = { path = "mmwave-tlv-derive" }
+mmwave-tlv-derive = { path = "./mmwave-tlv-derive", version = "0.1.0" }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt", "fs"] }

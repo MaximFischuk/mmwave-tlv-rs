@@ -1,7 +1,12 @@
 [package]
 name = "mmwave-tlv-derive"
+description = "Derive macros for decoding Texas Instruments mmWave radar TLV packets with mmwave-tlv."
 version = "0.1.0"
 edition = "2024"
+documentation = "https://docs.rs/mmwave-tlv-derive"
+repository = "https://github.com/MaximFischuk/mmwave-tlv-rs"
+authors = ["Maxim Fischuk <dev@mfischuk.com>"]
+license = "MIT"
 
 [lib]
 proc-macro = true
