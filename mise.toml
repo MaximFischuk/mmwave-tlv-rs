@@ -1,0 +1,20 @@
+[plugins]
+fnox-env = "https://github.com/jdx/mise-env-fnox"
+
+[tools]
+fnox = "latest"
+
+[[env]]
+# Encrypted environment variables from Fnox secret manager.
+# See fnox.toml
+_.fnox-env = { tools = true }
+
+[tasks.check]
+run = [
+  "cargo fmt -- --check",
+  "cargo clippy -- -D warnings",
+  "cargo nextest run --all-features",
+]
+
+[tasks.publish]
+run = ["cargo publish"]

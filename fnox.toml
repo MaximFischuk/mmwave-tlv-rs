@@ -1,0 +1,8 @@
+default_provider = "keychain"
+
+[providers.keychain]
+type = "keychain"
+service = "fnox"
+
+[secrets]
+CARGO_REGISTRY_TOKEN= { provider = "keychain", value = "CARGO_REGISTRY_TOKEN" }
