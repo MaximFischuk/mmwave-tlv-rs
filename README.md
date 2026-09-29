@@ -162,3 +162,8 @@ Frames missing a required `T` field return `Error::MissingRequiredTlv`.
 
 The crate returns `Result<T, TlvError>`. I/O failures, malformed packet data,
 and unexpected TLV type IDs are reported as `TlvError` values.
+
+## Disclaimer
+
+This crate is provided "as is" without any warranties. The author is not responsible for any damage or data loss resulting from the use of this crate. Use it at your own risk.
+This crate is not affiliated with, endorsed by, or sponsored by Texas Instruments. 'TI', 'mmWave', and 'IWR6843' are trademarks of Texas Instruments.
