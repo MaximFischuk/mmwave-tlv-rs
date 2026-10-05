@@ -2,7 +2,7 @@ use std::io::{BufRead, Read};
 
 use bytes::{Buf, BufMut, BytesMut};
 #[cfg(feature = "async")]
-use tokio::io::{AsyncBufRead, AsyncReadExt};
+use tokio::io::{AsyncRead, AsyncReadExt};
 
 use crate::{
     MAGIC, TlvReader, error,
@@ -23,7 +23,7 @@ pub struct FrameStreamReader<R> {
     buffer: BytesMut,
 }
 
-impl<R: BufRead> FrameStreamReader<R> {
+impl<R: Read> FrameStreamReader<R> {
     /// Creates a frame reader over a buffered byte stream.
     pub fn new(reader: R) -> Self {
         Self {
@@ -73,7 +73,7 @@ impl<R: BufRead> FrameStreamReader<R> {
     }
 }
 
-impl<R: BufRead> Read for FrameStreamReader<R> {
+impl<R: Read> Read for FrameStreamReader<R> {
     fn read(&mut self, output: &mut [u8]) -> std::io::Result<usize> {
         if self.buffer.is_empty() {
             return self.reader.read(output);
@@ -115,7 +115,7 @@ pub struct AsyncFrameStreamReader<R> {
 }
 
 #[cfg(feature = "async")]
-impl<R: AsyncBufRead + Unpin> AsyncFrameStreamReader<R> {
+impl<R: AsyncRead + Unpin> AsyncFrameStreamReader<R> {
     /// Creates an asynchronous frame reader over a buffered byte stream.
     pub fn new(reader: R) -> Self {
         Self {
